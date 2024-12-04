@@ -1,9 +1,11 @@
 #include "verifying.h"
 
-#include <gflags/gflags.h>
+// #include <gflags/gflags.h>
 
 #include <algorithm>
 #include <stdexcept>
+#include "pretty_print.h"
+#include "scheduler.h"
 
 namespace ltest {
 
@@ -84,15 +86,27 @@ Opts parse_opts() {
   opts.forbid_all_same = FLAGS_forbid_all_same;
   opts.typ = FromLiteral(std::move(FLAGS_strategy));
   std::vector<int> thread_weights;
-  if (FLAGS_weights != "") {
-    auto splited = split(FLAGS_weights, ',');
-    thread_weights.reserve(splited.size());
-    for (auto &s : splited) {
-      thread_weights.push_back(std::stoi(s));
-    }
-  }
+  // if (FLAGS_weights != "") {
+  //   auto splited = split(FLAGS_weights, ',');
+  //   thread_weights.reserve(splited.size());
+  //   for (auto &s : splited) {
+  //     thread_weights.push_back(std::stoi(s));
+  //   }
+  // }
   opts.thread_weights = std::move(thread_weights);
   return opts;
+}
+
+int Run(std::unique_ptr<Scheduler>&& scheduler, PrettyPrinter& pretty_printer) {
+  auto result = scheduler->Run();
+  if (result.has_value()) {
+    std::cout << "non linearized:\n";
+    pretty_printer.PrettyPrint(result.value().second, std::cout);
+    return 1;
+  } else {
+    std::cout << "success!\n";
+    return 0;
+  }
 }
 
 }  // namespace ltest
