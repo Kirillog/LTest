@@ -4,7 +4,6 @@ set (SOURCE_FILES
         lin_check.cpp
         logger.cpp
         pretty_printer.cpp
-        scheduler.cpp
         verifying.cpp 
         generators.cpp
         syscall_trap.cpp
