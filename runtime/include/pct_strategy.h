@@ -4,7 +4,7 @@
 #include <queue>
 #include <random>
 #include <utility>
-#include "sched_constraint.h"
+#include "strategy_verifier.h"
 #include "scheduler.h"
 
 // https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/asplos277-pct.pdf
@@ -12,7 +12,7 @@
 // Although it's impossible to predict the exact number of switches(since it's
 // equivalent to the halt problem), k should be good approximation
 template <typename TargetObj>
-struct PctStrategy : Strategy<ltest::DefaultSchedConstraint> {
+struct PctStrategy : Strategy<ltest::DefaultStrategyVerifier> {
   // forbid_all_same indicates whether it is allowed to have all same tasks(same
   // methods) in any moment of execution. Useful for blocking structures, for
   // instance, you don't want to run mutex.lock in each thread
