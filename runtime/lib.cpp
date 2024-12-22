@@ -54,7 +54,7 @@ extern "C" void CoroYield() {
 
 void CoroBase::Terminate() {
   int tries = 0;
-  while (!IsReturned() && tries < 10) {
+  while (!IsReturned()) {
     ++tries;
     Resume();
     assert(tries < 10000000 &&
