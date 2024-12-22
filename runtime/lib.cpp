@@ -23,7 +23,7 @@ void CoroBase::Resume() {
     return std::move(sched_ctx);
   }).resume();
   this_coro.reset();
-  fprintf(stderr, "this coro reset\n");
+  // fprintf(stderr, "this coro reset\n");
 }
 
 int CoroBase::GetRetVal() const {
@@ -54,7 +54,7 @@ extern "C" void CoroYield() {
 
 void CoroBase::Terminate() {
   int tries = 0;
-  while (!IsReturned()) {
+  while (!IsReturned() && tries < 10) {
     ++tries;
     Resume();
     assert(tries < 10000000 &&

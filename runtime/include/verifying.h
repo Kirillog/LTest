@@ -10,8 +10,8 @@
 #include "pretty_print.h"
 #include "random_strategy.h"
 #include "round_robin_strategy.h"
-#include "strategy_verifier.h"
 #include "scheduler.h"
+#include "strategy_verifier.h"
 #include "syscall_trap.h"
 #include "verifying_macro.h"
 
@@ -48,12 +48,13 @@ Opts parse_opts();
 std::vector<std::string> split(const std::string &s, char delim);
 
 template <typename TargetObj, typename StrategyVerifier>
-std::unique_ptr<Strategy<StrategyVerifier>> MakeStrategy(Opts &opts, std::vector<TaskBuilder> l) {
+std::unique_ptr<Strategy<StrategyVerifier>> MakeStrategy(
+    Opts &opts, std::vector<TaskBuilder> l) {
   switch (opts.typ) {
     case RR: {
       std::cout << "round-robin\n";
-      return std::make_unique<RoundRobinStrategy<TargetObj, StrategyVerifier>>(opts.threads,
-                                                             std::move(l));
+      return std::make_unique<RoundRobinStrategy<TargetObj, StrategyVerifier>>(
+          opts.threads, std::move(l));
     }
     case RND: {
       std::cout << "random\n";
@@ -94,9 +95,9 @@ struct StrategySchedulerWrapper : StrategyScheduler<StrategyVerifier> {
 };
 
 template <typename TargetObj, typename StrategyVerifier>
-std::unique_ptr<Scheduler> MakeScheduler(
-    ModelChecker &checker, Opts &opts, std::vector<TaskBuilder> l,
-    PrettyPrinter &pretty_printer) {
+std::unique_ptr<Scheduler> MakeScheduler(ModelChecker &checker, Opts &opts,
+                                         std::vector<TaskBuilder> l,
+                                         PrettyPrinter &pretty_printer) {
   std::cout << "strategy = ";
   switch (opts.typ) {
     case RR:
@@ -111,10 +112,9 @@ std::unique_ptr<Scheduler> MakeScheduler(
       return scheduler;
     }
     case TLA: {
-      auto scheduler =
-          std::make_unique<TLAScheduler<TargetObj>>(
-              opts.tasks, opts.rounds, opts.threads, opts.switches,
-              std::move(l), checker, pretty_printer);
+      auto scheduler = std::make_unique<TLAScheduler<TargetObj>>(
+          opts.tasks, opts.rounds, opts.threads, opts.switches, std::move(l),
+          checker, pretty_printer);
       return scheduler;
     }
   }
