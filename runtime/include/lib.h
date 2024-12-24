@@ -78,6 +78,18 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Sets the token.
   void SetToken(std::shared_ptr<Token>);
 
+  inline void SetBlocked(long uaddr, int value) {
+    futex = {reinterpret_cast<int*>(uaddr), value};
+  }
+
+  inline bool IsBlocked() {
+    bool is_blocked = futex.first && *futex.first == futex.second;
+    if (!is_blocked) {
+      futex = std::make_pair(nullptr, 0);
+    }
+    return is_blocked;
+  }
+
   // Checks if the coroutine is parked.
   bool IsParked() const;
 
@@ -96,6 +108,8 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   int ret{};
   // Is coroutine returned.
   bool is_returned{};
+  // TODO
+  std::pair<int*, int> futex{};
   // Name.
   std::string_view name;
   // Token.
