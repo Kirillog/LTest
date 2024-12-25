@@ -119,8 +119,9 @@ std::unique_ptr<Scheduler> MakeScheduler(ModelChecker &checker, Opts &opts,
 }
 
 template <StrategyVerifier Verifier>
-int NoTrapRun(std::unique_ptr<Scheduler> &&scheduler,
-              PrettyPrinter &pretty_printer) {
+int TrapRun(std::unique_ptr<Scheduler> &&scheduler,
+            PrettyPrinter &pretty_printer) {
+  auto guard = SyscallTrapGuard{};
   auto result = scheduler->Run();
   if (result.has_value()) {
     std::cout << "non linearized:\n";
@@ -157,12 +158,7 @@ int Run(int argc, char *argv[]) {
       checker, opts, std::move(task_builders), pretty_printer);
   std::cout << "\n\n";
   std::cout.flush();
-  if (!opts.syscall_trap) {
-    return NoTrapRun<Verifier>(std::move(scheduler), pretty_printer);
-  } else {
-    auto guard = SyscallTrapGuard{};
-    return NoTrapRun<Verifier>(std::move(scheduler), pretty_printer);
-  }
+  return TrapRun<Verifier>(std::move(scheduler), pretty_printer);
 }
 
 }  // namespace ltest
