@@ -3,11 +3,8 @@
 #include <cassert>
 #include <queue>
 #include <random>
-#include <ranges>
-#include <utility>
 
 #include "scheduler.h"
-#include "strategy_verifier.h"
 
 // https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/asplos277-pct.pdf
 // K represents the maximal number of potential switches in the program
@@ -182,6 +179,7 @@ struct PctStrategy : Strategy<Verifier> {
         thread.back()->Terminate();
       }
     }
+    this->sched_checker.Reset();
   }
 
   TargetObj state{};
