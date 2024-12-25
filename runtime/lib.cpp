@@ -23,7 +23,6 @@ void CoroBase::Resume() {
     return std::move(sched_ctx);
   }).resume();
   this_coro.reset();
-  // fprintf(stderr, "this coro reset\n");
 }
 
 int CoroBase::GetRetVal() const {
