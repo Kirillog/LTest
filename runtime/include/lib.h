@@ -108,7 +108,7 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   int ret{};
   // Is coroutine returned.
   bool is_returned{};
-  // TODO
+  // NOTE(kmitkin): consider another way of blocking
   std::pair<int*, int> futex{};
   // Name.
   std::string_view name;
