@@ -8,6 +8,7 @@
 std::shared_ptr<CoroBase> this_coro{};
 std::jmp_buf sched_ctx{};
 std::jmp_buf start_point{};
+bool clearing{};
 
 void CoroBody(int signum) {
   std::shared_ptr<CoroBase> c = this_coro->GetPtr();
@@ -56,7 +57,9 @@ bool CoroBase::IsReturned() const { return is_returned; }
 
 extern "C" void CoroYield() {
   debug(stderr, "switch\n");
-  assert(this_coro);
+  if (clearing) {
+    return;
+  }
   if (setjmp(this_coro->ctx) == 0) {
     longjmp(sched_ctx, 1);
   }

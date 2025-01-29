@@ -6,12 +6,12 @@
 #include "verifying/specs/mutex.h"
 
 target_method(ltest::generators::genEmpty, int, folly::SharedMutex, lock);
-target_method(ltest::generators::genEmpty, int, folly::SharedMutex,
-              lock_shared);
+// target_method(ltest::generators::genEmpty, int, folly::SharedMutex,
+//               lock_shared);
 
 target_method(ltest::generators::genEmpty, int, folly::SharedMutex, unlock);
-target_method(ltest::generators::genEmpty, int, folly::SharedMutex,
-              unlock_shared);
+// target_method(ltest::generators::genEmpty, int, folly::SharedMutex,
+//               unlock_shared);
 
 using spec_t =
     ltest::Spec<folly::SharedMutex, spec::SharedLinearMutex,

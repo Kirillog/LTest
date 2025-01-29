@@ -26,6 +26,8 @@ extern std::jmp_buf sched_ctx;
 // Current starter context.
 extern std::jmp_buf start_point;
 
+extern bool clearing;
+
 void CoroBody(int signum);
 
 // Runtime token.

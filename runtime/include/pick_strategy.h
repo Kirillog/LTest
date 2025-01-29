@@ -68,7 +68,9 @@ struct PickStrategy : Strategy<Verifier> {
     }
 
     // Reinitial target as we start from the beginning.
+    clearing = true;
     state.Reset();
+    clearing = false;
   }
 
   ~PickStrategy() { TerminateTasks(); }
@@ -79,7 +81,9 @@ struct PickStrategy : Strategy<Verifier> {
   // Actually, we assume obstruction free here.
   // TODO: for non obstruction-free we need to take into account dependencies.
   void TerminateTasks() {
+    clearing = true;
     state.Reset();
+    clearing = false;
     for (size_t i = 0; i < threads.size(); ++i) {
       if (!threads[i].empty()) {
         threads[i].back()->Terminate();
