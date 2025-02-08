@@ -1,6 +1,7 @@
-FROM silkeh/clang:18 AS ltest
+FROM silkeh/clang:19 AS ltest
 
-RUN apt update && apt install -y git ninja-build valgrind libboost-context-dev libgflags-dev
+RUN apt update && apt install -y git ninja-build valgrind libboost-context-dev libgflags-dev libstdc++-11-dev
+RUN mv /usr/lib/gcc/x86_64-linux-gnu/12 /usr/lib/gcc/x86_64-linux-gnu/_12
 
 FROM ltest as blocking
 RUN apt install -y pkg-config libcapstone-dev && \

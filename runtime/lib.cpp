@@ -10,6 +10,10 @@ Task this_coro{};
 
 boost::context::fiber_context sched_ctx;
 
+namespace ltest {
+  std::vector<TaskBuilder> task_builders{};
+}
+
 Task CoroBase::GetPtr() { return shared_from_this(); }
 
 void CoroBase::SetToken(std::shared_ptr<Token> token) { this->token = token; }
