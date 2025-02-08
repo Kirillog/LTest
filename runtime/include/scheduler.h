@@ -9,9 +9,17 @@
 #include "pretty_print.h"
 #include "stable_vector.h"
 
-// TODO(kmitkin): investigate how to make them Strategy typedef
-typedef std::tuple<std::string, bool, int> NextTask;
-typedef std::tuple<Task&, bool, int> ChosenTask;
+struct CreatedTaskMetaData {
+  std::string name;
+  bool is_new;
+  size_t thread_id;
+};
+
+struct TaskWithMetaData {
+  Task& task;
+  bool is_new;
+  size_t thread_id;
+};
 
 /// StrategyVerifier is required for scheduling only allowed tasks
 /// Some data structures doesn't allow us to schedule one tasks before another
@@ -19,9 +27,9 @@ typedef std::tuple<Task&, bool, int> ChosenTask;
 /// UB.
 template <typename T>
 concept StrategyVerifier = requires(T a) {
-  { a.Verify(NextTask(string(), bool(), int())) } -> std::same_as<bool>;
+  { a.Verify(CreatedTaskMetaData(string(), bool(), int())) } -> std::same_as<bool>;
   {
-    a.OnFinished(ChosenTask(std::declval<Task&>(), bool(), int()))
+    a.OnFinished(TaskWithMetaData(std::declval<Task&>(), bool(), int()))
   } -> std::same_as<void>;
   { a.Reset() } -> std::same_as<void>;
 };
@@ -33,7 +41,7 @@ template <StrategyVerifier Verifier>
 struct Strategy {
   // Returns the next tasks,
   // the flag which tells is the task new, and the thread number.
-  virtual ChosenTask Next() = 0;
+  virtual TaskWithMetaData Next() = 0;
 
   // Strategy should stop all tasks that already have been started
   virtual void StartNextRound() = 0;

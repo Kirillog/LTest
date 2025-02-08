@@ -2,9 +2,9 @@
 #include "scheduler.h"
 
 struct DefaultStrategyVerifier {
-  inline bool Verify(NextTask task) { return true; }
+  inline bool Verify(CreatedTaskMetaData task) { return true; }
 
-  inline void OnFinished(ChosenTask task) {}
+  inline void OnFinished(TaskWithMetaData task) {}
 
   inline void Reset() {}
 };

@@ -28,9 +28,9 @@ struct PickStrategy : Strategy<Verifier> {
 
   // If there aren't any non returned tasks and the amount of finished tasks
   // is equal to the max_tasks the finished task will be returned
-  ChosenTask Next() override {
+  TaskWithMetaData Next() override {
     auto current_task = Pick();
-    debug(stderr, "Picked thread: %d\n", current_task);
+    debug(stderr, "Picked thread: %zu\n", current_task);
 
     // it's the first task if the queue is empty
     if (threads[current_task].empty() ||
@@ -40,7 +40,7 @@ struct PickStrategy : Strategy<Verifier> {
       size_t verified_constructor = -1;
       for (size_t i = 0; i < constructors.size(); ++i) {
         TaskBuilder constructor = constructors.at(i);
-        NextTask next_task = {constructor.GetName(), true, current_task};
+        CreatedTaskMetaData next_task = {constructor.GetName(), true, current_task};
         if (this->sched_checker.Verify(next_task)) {
           verified_constructor = i;
           break;
@@ -51,7 +51,7 @@ struct PickStrategy : Strategy<Verifier> {
       }
       threads[current_task].emplace_back(
           constructors[verified_constructor].Build(&state, current_task));
-      ChosenTask task{threads[current_task].back(), true, current_task};
+      TaskWithMetaData task{threads[current_task].back(), true, current_task};
       return task;
     }
 

@@ -48,7 +48,7 @@ struct PctStrategy : Strategy<Verifier> {
 
   // If there aren't any non returned tasks and the amount of finished tasks
   // is equal to the max_tasks the finished task will be returned
-  ChosenTask Next() override {
+  TaskWithMetaData Next() override {
     size_t max = std::numeric_limits<size_t>::min();
     size_t index_of_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
@@ -89,7 +89,7 @@ struct PctStrategy : Strategy<Verifier> {
         while (true) {
           auto name = constructor.GetName();
           names.insert(name);
-          NextTask task = {name, true, index_of_max};
+          CreatedTaskMetaData task = {name, true, index_of_max};
           if (names.size() == 1 || !this->sched_checker.Verify(task)) {
             constructor = constructors.at(constructors_distribution(rng));
           } else {

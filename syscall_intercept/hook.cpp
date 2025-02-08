@@ -21,7 +21,7 @@ hook(long syscall_number,
 		CoroYield();
 		return 0;
 	} else if (syscall_number == SYS_futex) {
-		debug(stderr, "caught futex(0x%lx, %d, %d)\n", (unsigned long)arg0, arg1, arg2);
+		debug(stderr, "caught futex(0x%lx, %ld, %ld)\n", (unsigned long)arg0, arg1, arg2);
 		if (arg1 == FUTEX_WAIT_PRIVATE) {
 			this_coro->SetBlocked(arg0, arg2);
 		} else if (arg1 == FUTEX_WAKE_PRIVATE) {

@@ -118,8 +118,7 @@ std::unique_ptr<Scheduler> MakeScheduler(ModelChecker &checker, Opts &opts,
   }
 }
 
-template <StrategyVerifier Verifier>
-int TrapRun(std::unique_ptr<Scheduler> &&scheduler,
+inline int TrapRun(std::unique_ptr<Scheduler> &&scheduler,
             PrettyPrinter &pretty_printer) {
   auto guard = SyscallTrapGuard{};
   auto result = scheduler->Run();
@@ -158,7 +157,7 @@ int Run(int argc, char *argv[]) {
       checker, opts, std::move(task_builders), pretty_printer);
   std::cout << "\n\n";
   std::cout.flush();
-  return TrapRun<Verifier>(std::move(scheduler), pretty_printer);
+  return TrapRun(std::move(scheduler), pretty_printer);
 }
 
 }  // namespace ltest
@@ -166,7 +165,7 @@ int Run(int argc, char *argv[]) {
 #define LTEST_ENTRYPOINT_CONSTRAINT(spec_obj_t, strategy_verifier) \
   int main(int argc, char *argv[]) {                               \
     return ltest::Run<spec_obj_t, strategy_verifier>(argc, argv);  \
-  }
+  }\
 
 #define LTEST_ENTRYPOINT(spec_obj_t)           \
   int main(int argc, char *argv[]) {           \

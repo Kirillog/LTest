@@ -3,5 +3,4 @@ build
 venv
 .devcontainer/**
 .cache/**
-folly
-boost
+third_party/**
