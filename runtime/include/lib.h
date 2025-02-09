@@ -1,16 +1,14 @@
 #pragma once
-#include <signal.h>
 #include <valgrind/memcheck.h>
 
 #include <boost/context/detail/fcontext.hpp>
 #include <boost/context/fiber.hpp>
 #include <boost/context/fiber_fcontext.hpp>
 #include <cassert>
-#include <coroutine>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #define panic() assert(false)
@@ -78,14 +76,20 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Sets the token.
   void SetToken(std::shared_ptr<Token>);
 
+  struct FutexState {
+    int* addr;
+    int value;
+  };
+
   inline void SetBlocked(long uaddr, int value) {
-    futex = {reinterpret_cast<int*>(uaddr), value};
+    fstate = {reinterpret_cast<int*>(uaddr), value};
   }
 
   inline bool IsBlocked() {
-    bool is_blocked = futex.first && *futex.first == futex.second;
+    /// Check that value stored by futex addr isn't changed
+    bool is_blocked = fstate.addr && *fstate.addr == fstate.value;
     if (!is_blocked) {
-      futex = std::make_pair(nullptr, 0);
+      fstate = FutexState{nullptr, 0};
     }
     return is_blocked;
   }
@@ -108,8 +112,8 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   int ret{};
   // Is coroutine returned.
   bool is_returned{};
-  // NOTE(kmitkin): consider another way of blocking
-  std::pair<int*, int> futex{};
+  // Futex state on which coroutine is blocked.
+  FutexState fstate{};
   // Name.
   std::string_view name;
   // Token.

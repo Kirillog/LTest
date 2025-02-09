@@ -4,6 +4,7 @@
 
 struct SharedMutexVerifier {
   enum : int32_t { READER = 4, WRITER = 1, FREE = 0 };
+  /// Verify checks the state of a mutex on starting of `ctask`
   bool Verify(CreatedTaskMetaData ctask) {
     auto [taskName, is_new, thread_id] = ctask;
     debug(stderr, "validating method %s, thread_id: %zu\n", taskName.data(),
@@ -11,6 +12,8 @@ struct SharedMutexVerifier {
     if (status.count(thread_id) == 0) {
       status[thread_id] = FREE;
     }
+    /// When `lock` is executed, it is expected that current thread doesn't hold
+    /// a mutex because otherwise we get recursive lock and UB
     if (taskName == "lock") {
       return status[thread_id] == FREE;
     } else if (taskName == "unlock") {

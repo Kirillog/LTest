@@ -5,9 +5,6 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "pretty_print.h"
-#include "scheduler.h"
-
 namespace ltest {
 
 template <>

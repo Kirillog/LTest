@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <queue>
 #include <random>
 
 #include "scheduler.h"
