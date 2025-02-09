@@ -1,5 +1,8 @@
 name: run-tests
-on: [push]
+on:
+  push:
+  pull_request:
+    branches: [ "master" ]
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -59,9 +62,9 @@ jobs:
           if [ "${error_code}" -ne 1 ]; then 
             exit 1
           fi
-      - name: Run simple_mutex with pct strategy
+      - name: Run nonlinear_mutex with pct strategy
         run: |
-          LD_PRELOAD=build/syscall_intercept/libpreload.so ./build/verifying/blocking/simple_mutex --strategy pct --tasks 10 --rounds 240 || error_code=$?
+          LD_PRELOAD=build/syscall_intercept/libpreload.so ./build/verifying/blocking/nonlinear_mutex --strategy pct --tasks 10 --rounds 240 || error_code=$?
           if [ "${error_code}" -ne 1 ]; then 
             exit 1
           fi
