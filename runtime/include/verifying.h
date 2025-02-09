@@ -71,7 +71,7 @@ std::unique_ptr<Strategy<Verifier>> MakeStrategy(Opts &opts,
     }
     case PCT: {
       std::cout << "pct\n";
-      return std::make_unique<PctStrategy<TargetObj>>(
+      return std::make_unique<PctStrategy<TargetObj, Verifier>>(
           opts.threads, std::move(l), opts.forbid_all_same);
     }
     default:
@@ -119,7 +119,7 @@ std::unique_ptr<Scheduler> MakeScheduler(ModelChecker &checker, Opts &opts,
 }
 
 inline int TrapRun(std::unique_ptr<Scheduler> &&scheduler,
-            PrettyPrinter &pretty_printer) {
+                   PrettyPrinter &pretty_printer) {
   auto guard = SyscallTrapGuard{};
   auto result = scheduler->Run();
   if (result.has_value()) {
@@ -165,7 +165,7 @@ int Run(int argc, char *argv[]) {
 #define LTEST_ENTRYPOINT_CONSTRAINT(spec_obj_t, strategy_verifier) \
   int main(int argc, char *argv[]) {                               \
     return ltest::Run<spec_obj_t, strategy_verifier>(argc, argv);  \
-  }\
+  }
 
 #define LTEST_ENTRYPOINT(spec_obj_t)           \
   int main(int argc, char *argv[]) {           \

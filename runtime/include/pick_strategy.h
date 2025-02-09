@@ -40,7 +40,8 @@ struct PickStrategy : Strategy<Verifier> {
       size_t verified_constructor = -1;
       for (size_t i = 0; i < constructors.size(); ++i) {
         TaskBuilder constructor = constructors.at(i);
-        CreatedTaskMetaData next_task = {constructor.GetName(), true, current_task};
+        CreatedTaskMetaData next_task = {constructor.GetName(), true,
+                                         current_task};
         if (this->sched_checker.Verify(next_task)) {
           verified_constructor = i;
           break;
