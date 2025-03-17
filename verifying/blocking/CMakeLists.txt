@@ -3,6 +3,8 @@ set (SOURCE_TARGET_LIST
     simple_mutex.cpp
     nonlinear_mutex.cpp
     folly_rwspinlock.cpp
+    shared_mutexed_register.cpp
+    bank.cpp
 )
 
 foreach(source_name ${SOURCE_TARGET_LIST})

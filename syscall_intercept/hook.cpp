@@ -25,7 +25,7 @@ hook(long syscall_number,
 		if (arg1 == FUTEX_WAIT_PRIVATE) {
 			this_coro->SetBlocked(arg0, arg2);
 		} else if (arg1 == FUTEX_WAKE_PRIVATE) {
-			
+			debug(stderr, "caught wake\n");
 		} else {
 			assert(false && "unsupported futex call");
 		}
