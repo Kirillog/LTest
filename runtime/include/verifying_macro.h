@@ -1,5 +1,6 @@
 // Keeps as separated file because use in regression tests.
 #pragma once
+#include <any>
 #include <cassert>
 #include <vector>
 
@@ -51,22 +52,50 @@ template <typename Ret, typename Target, typename... Args>
 struct TargetMethod;
 
 template <typename Target, typename... Args>
-struct TargetMethod<int, Target, Args...> {
-  using Method = std::function<int(Target *, Args...)>;
+struct TargetMethod<uint64_t, Target, Args...> {
+  using Method = std::function<uint64_t(Target *, Args...)>;
   TargetMethod(std::string_view method_name,
                std::function<std::tuple<Args...>(size_t)> gen, Method method) {
-    auto builder = [gen = std::move(gen), method_name,
+    auto builder = [method_name,
                     method = std::move(method)](
-                       void *this_ptr, size_t thread_num, int task_id) -> Task {
-      auto args = std::shared_ptr<void>(new std::tuple(gen(thread_num)));
-      auto coro = Coro<Target, Args...>::New(method, this_ptr, args,
+                       void *this_ptr, std::any args, size_t thread_num, int task_id) -> Task {
+      auto real_args = std::any_cast<std::tuple<Args...>>(args);
+      auto sh_args = std::shared_ptr<void>(new std::tuple(real_args));
+      auto coro = Coro<Target, Args...>::New(method, this_ptr, sh_args,
                                              &ltest::toStringArgs<Args...>,
                                              method_name, task_id);
       return coro;
     };
+    auto st_gen = [gen = std::move(gen)](size_t thread){
+      return std::any(gen(thread));
+    };
     ltest::task_builders.push_back(
-        TaskBuilder(std::string(method_name), builder));
+        TaskBuilder(std::string(method_name), st_gen, builder));
   }
+};
+
+template <typename Target, typename... Args>
+struct TargetMethod<int, Target, Args...> {
+  using Method = std::function<int(Target *, Args...)>;
+  TargetMethod(std::string_view method_name,
+               std::function<std::tuple<Args...>(size_t)> gen, Method method) {
+                auto builder = [method_name,
+                                method = std::move(method)](
+                                   void *this_ptr, std::any args, size_t thread_num, int task_id) -> Task {
+                  auto real_args = std::any_cast<std::tuple<Args...>>(args);
+                  auto sh_args = std::shared_ptr<void>(new std::tuple(real_args));
+                  auto coro = Coro<Target, Args...>::New(method, this_ptr, sh_args,
+                                                         &ltest::toStringArgs<Args...>,
+                                                         method_name, task_id);
+                  return coro;
+                };
+                auto st_gen = [gen = std::move(gen)](size_t thread){
+      return std::any(gen(thread));
+
+                };
+                ltest::task_builders.push_back(
+                    TaskBuilder(std::string(method_name), st_gen, builder));
+              }
 };
 
 // Emulate that void f() returns 0.
@@ -83,21 +112,24 @@ struct Wrapper {
 template <typename Target, typename... Args>
 struct TargetMethod<void, Target, Args...> {
   using Method = std::function<void(Target *, Args...)>;
-
   TargetMethod(std::string_view method_name,
                std::function<std::tuple<Args...>(size_t)> gen, Method method) {
-    auto builder = [gen = std::move(gen), method_name,
+    auto builder = [method_name,
                     method = std::move(method)](
-                       void *this_ptr, size_t thread_num, int task_id) -> Task {
+                       void *this_ptr, std::any args, size_t thread_num, int task_id) -> Task {
       auto wrapper = Wrapper<Target, decltype(method), Args...>{method};
-      auto args = std::shared_ptr<void>(new std::tuple(gen(thread_num)));
-      auto coro = Coro<Target, Args...>::New(wrapper, this_ptr, args,
+      auto real_args = std::any_cast<std::tuple<Args...>>(args);
+      auto sh_args = std::shared_ptr<void>(new std::tuple(real_args));
+      auto coro = Coro<Target, Args...>::New(wrapper, this_ptr, sh_args,
                                              &ltest::toStringArgs<Args...>,
                                              method_name, task_id);
       return coro;
     };
+    auto st_gen = [gen = std::move(gen)](size_t thread){
+      return std::any(gen(thread));
+    };
     ltest::task_builders.push_back(
-        TaskBuilder(std::string(method_name), builder));
+        TaskBuilder(std::string(method_name), st_gen, builder));
   }
 };
 

@@ -4,7 +4,7 @@
 
 struct MutexVerifier {
   bool Verify(CreatedTaskMetaData ctask) {
-    auto [taskName, is_new, thread_id] = ctask;
+    auto [taskName, args, is_new, thread_id] = ctask;
     debug(stderr, "validating method %s, thread_id: %zu\n", taskName.data(),
           thread_id);
     if (!is_new) {

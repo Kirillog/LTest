@@ -1,4 +1,5 @@
 #pragma once
+#include <any>
 #include <boost/context/detail/fcontext.hpp>
 #include <boost/context/fiber.hpp>
 #include <boost/context/fiber_fcontext.hpp>
@@ -46,7 +47,7 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   int GetId() const;
 
   // Returns return value of the coroutine.
-  virtual int GetRetVal() const;
+  virtual uint64_t GetRetVal() const;
 
   // Returns the name of the coroutine.
   virtual std::string_view GetName() const;
@@ -60,9 +61,6 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Returns new pointer to the coroutine.
   // https://en.cppreference.com/w/cpp/memory/enable_shared_from_this
   std::shared_ptr<CoroBase> GetPtr();
-
-  // Try to terminate the coroutine.
-  void TryTerminate();
 
   // Terminate the coroutine.
   void Terminate();
@@ -90,7 +88,7 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Task id.
   int id;
   // Return value.
-  int ret{};
+  uint64_t ret{};
   // Is coroutine returned.
   bool is_returned{};
   // Futex state on which coroutine is blocked.
@@ -167,20 +165,25 @@ struct Coro final : public CoroBase {
 
 using Task = std::shared_ptr<CoroBase>;
 
-// (this_ptr, thread_num, task_id) -> Task
+// (this_ptr, args, thread_num, task_id) -> Task
 
 struct TaskBuilder {
-  using BuilderFunc = std::function<Task(void*, size_t, int)>;
-  TaskBuilder(std::string name, BuilderFunc func)
-      : name(name), builder_func(func) {}
+  using BuilderFunc = std::function<Task(void*, std::any, size_t, int)>;
+  TaskBuilder(std::string name, std::function<std::any(size_t)>gen, BuilderFunc func)
+      : name(name), gen(std::move(gen)), builder_func(func) {}
 
   const std::string& GetName() const { return name; }
 
-  Task Build(void* this_ptr, size_t thread_id, int task_id) {
-    return builder_func(this_ptr, thread_id, task_id);
+  std::any BuildArgs(size_t thread_id) {
+    return gen(thread_id);
+  }
+
+  Task Build(void* this_ptr, std::any args, size_t thread_id, int task_id) {
+    return builder_func(this_ptr, args, thread_id, task_id);
   }
 
  private:
   std::string name;
+  std::function<std::any(size_t)>gen;
   BuilderFunc builder_func;
 };

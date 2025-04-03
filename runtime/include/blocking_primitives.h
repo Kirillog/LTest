@@ -35,6 +35,10 @@ struct mutex {
 };
 
 struct shared_mutex {
+  shared_mutex() {
+    locked = 0;
+    state = {reinterpret_cast<std::intptr_t>(&locked), locked};
+  }
   as_atomic void lock() {
     while (locked != 0) {
       this_coro->SetBlocked(state);
@@ -59,7 +63,7 @@ struct shared_mutex {
   }
 
  private:
-  int locked{0};
-  FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};
+  int locked;
+  FutexState state;
 };
 }  // namespace ltest

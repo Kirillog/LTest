@@ -42,7 +42,7 @@ void CoroBase::Resume() {
 
 int CoroBase::GetId() const { return id; }
 
-int CoroBase::GetRetVal() const {
+uint64_t CoroBase::GetRetVal() const {
   assert(IsReturned());
   return ret;
 }
@@ -76,11 +76,5 @@ void CoroBase::Terminate() {
     Resume();
     assert(tries < 1000000 &&
            "coroutine is spinning too long, possible wrong terminating order");
-  }
-}
-
-void CoroBase::TryTerminate() {
-  for (size_t i = 0; i < 1000 && !is_returned; ++i) {
-    Resume();
   }
 }

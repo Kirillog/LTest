@@ -24,3 +24,5 @@ foreach(source_name ${FOLLY_SOURCE_TARGET_LIST})
     target_link_libraries(${target} PRIVATE glog folly double-conversion)
     add_dependencies(${target} preload)
 endforeach(source_name ${FOLLY_SOURCE_TARGET_LIST})
+
+add_subdirectory(vk)
