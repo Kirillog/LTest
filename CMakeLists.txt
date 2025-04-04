@@ -15,9 +15,9 @@ set(APPLY_CLANG_TOOL ON)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Debug mode ON")
+    set(CMAKE_ASAN_FLAGS -fsanitize=address -fsanitize=undefined -DADDRESS_SANITIZER)
     set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g -ggdb3 -O0 -fno-omit-frame-pointer")
     set(CMAKE_WARN_FLAGS -Wall -Wextra -Werror -pedantic-errors)
-    set(CMAKE_ASAN_FLAGS -fsanitize=address -fsanitize=undefined -DADDRESS_SANITIZER)
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 add_subdirectory(third_party)

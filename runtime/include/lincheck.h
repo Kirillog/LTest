@@ -112,10 +112,10 @@ LinearizabilityChecker<LinearSpecificationObject, SpecificationObjectHash,
         LinearizabilityChecker::MethodMap specification_methods,
         LinearSpecificationObject first_state)
     : specification_methods(specification_methods), first_state(first_state) {
-  if (!std::is_copy_assignable_v<LinearSpecificationObject>) {
+  if (!std::is_copy_constructible_v<LinearSpecificationObject>) {
     // TODO: should do it in the compile time
     throw std::invalid_argument(
-        "LinearSpecificationObject type have to be is_copy_assignable_v");
+        "LinearSpecificationObject type have to be is_copy_constructible_v");
   }
 }
 
@@ -164,8 +164,7 @@ bool LinearizabilityChecker<
           specification_methods.find(inv.GetTask()->GetName())->second;
       // apply method
       bool was_checked = false;
-      LinearSpecificationObject data_structure_state_copy =
-          data_structure_state;
+      LinearSpecificationObject data_structure_state_copy{data_structure_state};
       int res = method(&data_structure_state_copy, inv.GetTask()->GetArgs());
 
       // If invoke doesn't have a response we can't check the response

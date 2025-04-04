@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <numeric>
+#include <type_traits>
 
 #include "lincheck.h"
 
@@ -36,10 +37,10 @@ LinearizabilityCheckerRecursive<LinearSpecificationObject,
         LinearizabilityCheckerRecursive::MethodMap specification_methods,
         LinearSpecificationObject first_state)
     : specification_methods(specification_methods), first_state(first_state) {
-  if (!std::is_copy_assignable_v<LinearSpecificationObject>) {
+  if (!std::is_copy_constructible_v<LinearSpecificationObject>) {
     // TODO: should do it in the compile time
     throw std::invalid_argument(
-        "LinearSpecificationObject type have to be is_copy_assignable_v");
+        "LinearSpecificationObject type have to be is_copy_constructible_v");
   }
 }
 

@@ -36,7 +36,8 @@ struct TaskWithMetaData {
 template <typename T>
 concept StrategyVerifier = requires(T a) {
   {
-    a.Verify(CreatedTaskMetaData(string(), std::declval<std::any>(), bool(), int()))
+    a.Verify(
+        CreatedTaskMetaData(string(), std::declval<std::any>(), bool(), int()))
   } -> std::same_as<bool>;
   {
     a.OnFinished(TaskWithMetaData(std::declval<Task&>(), bool(), int()))
@@ -212,8 +213,8 @@ struct BaseStrategyWithThreads : public Strategy {
       CreatedTaskMetaData next_task;
       for (size_t i = 0; i < this->constructors.size(); ++i) {
         TaskBuilder constructor = this->constructors.at(i);
-        next_task = {constructor.GetName(), constructor.BuildArgs(thread_index), true,
-                                         thread_index};
+        next_task = {constructor.GetName(), constructor.BuildArgs(thread_index),
+                     true, thread_index};
         if (this->sched_checker->Verify(next_task)) {
           verified_constructor = i;
           break;
@@ -224,7 +225,8 @@ struct BaseStrategyWithThreads : public Strategy {
       }
       threads[thread_index].emplace_back(
           this->constructors[verified_constructor].Build(
-              &*this->state, next_task.args, thread_index, this->new_task_id++));
+              &*this->state, next_task.args, thread_index,
+              this->new_task_id++));
       TaskWithMetaData task{threads[thread_index].back(), true, thread_index};
       return task;
     }
@@ -241,6 +243,7 @@ struct BaseStrategyWithThreads : public Strategy {
     assert(round_schedule.size() == this->threads.size() &&
            "sizes expected to be the same");
     round_schedule.assign(round_schedule.size(), -1);
+    fprintf(stderr, "Terminating...\n");
 
     std::vector<size_t> task_indexes(this->threads.size(), 0);
     bool has_nonterminated_threads = true;
@@ -268,8 +271,8 @@ struct BaseStrategyWithThreads : public Strategy {
                                 return b.GetName() == *releaseTask;
                               });
             std::any args = constructor.BuildArgs(thread_index);
-            auto task =
-                constructor.Build(&*this->state, args, thread_index, task_index);
+            auto task = constructor.Build(&*this->state, args, thread_index,
+                                          task_index);
             auto verified = this->sched_checker->Verify(CreatedTaskMetaData{
                 std::string(task->GetName()), args, true, thread_index});
             assert(verified && "wrong release task at termination");
@@ -412,7 +415,7 @@ struct StrategyScheduler : public SchedulerWithReplay {
 
         auto result = next_task->GetRetVal();
         sequential_history.emplace_back(Response(next_task, result, thread_id));
-        debug(stderr, "Tasks finished: %ld\n", finished_tasks);
+        fprintf(stderr, "Tasks finished: %ld\n", finished_tasks);
       }
     }
 

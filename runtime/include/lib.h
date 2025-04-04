@@ -169,14 +169,13 @@ using Task = std::shared_ptr<CoroBase>;
 
 struct TaskBuilder {
   using BuilderFunc = std::function<Task(void*, std::any, size_t, int)>;
-  TaskBuilder(std::string name, std::function<std::any(size_t)>gen, BuilderFunc func)
+  TaskBuilder(std::string name, std::function<std::any(size_t)> gen,
+              BuilderFunc func)
       : name(name), gen(std::move(gen)), builder_func(func) {}
 
   const std::string& GetName() const { return name; }
 
-  std::any BuildArgs(size_t thread_id) {
-    return gen(thread_id);
-  }
+  std::any BuildArgs(size_t thread_id) { return gen(thread_id); }
 
   Task Build(void* this_ptr, std::any args, size_t thread_id, int task_id) {
     return builder_func(this_ptr, args, thread_id, task_id);
@@ -184,6 +183,6 @@ struct TaskBuilder {
 
  private:
   std::string name;
-  std::function<std::any(size_t)>gen;
+  std::function<std::any(size_t)> gen;
   BuilderFunc builder_func;
 };
