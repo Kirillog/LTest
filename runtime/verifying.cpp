@@ -9,18 +9,18 @@
 
 namespace ltest {
 
-template <>
-std::string toString<int>(const int &a) {
+template <typename T>
+std::string toString(const T &a) {
   return std::to_string(a);
 }
 
 template <>
-std::string toString<size_t>(const size_t &a) {
+std::string toString<unsigned int>(const unsigned int &a) {
   return std::to_string(a);
 }
 
 template <>
-std::string toString<uint32_t>(const uint32_t &a) {
+std::string toString<unsigned long>(const unsigned long &a) {
   return std::to_string(a);
 }
 

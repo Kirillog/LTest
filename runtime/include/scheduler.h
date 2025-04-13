@@ -243,7 +243,6 @@ struct BaseStrategyWithThreads : public Strategy {
     assert(round_schedule.size() == this->threads.size() &&
            "sizes expected to be the same");
     round_schedule.assign(round_schedule.size(), -1);
-    fprintf(stderr, "Terminating...\n");
 
     std::vector<size_t> task_indexes(this->threads.size(), 0);
     bool has_nonterminated_threads = true;
@@ -292,7 +291,6 @@ struct BaseStrategyWithThreads : public Strategy {
         }
       }
     }
-
     sched_checker.reset(new Verifier{});
     state.reset(new TargetObj{});
   }

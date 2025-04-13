@@ -29,6 +29,14 @@ struct mutex {
         state.addr);  // Two have the ability schedule any coroutine
   }
 
+  as_atomic void lock_shared() {
+    assert(false);
+  }
+  as_atomic void unlock_shared() {
+    assert(false);
+  }
+
+
  private:
   int locked{0};
   FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};

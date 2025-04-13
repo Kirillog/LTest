@@ -25,7 +25,7 @@ function(verify_target target)
                     --replace-names ::std::mutex,::std::shared_mutex
                     --insert-names  ltest::mutex,ltest::shared_mutex
                     ${CMAKE_CURRENT_SOURCE_DIR}/${source_name}
-            DEPENDS ${CLANG_TOOL}
+            DEPENDS ${CLANG_TOOL} ${source_name}
             COMMENT "Running Clang Pass Tool on ${source_name}"
         )
 
@@ -33,6 +33,7 @@ function(verify_target target)
         add_custom_command(
             TARGET ${target}
             POST_BUILD
+            DEPENDS ${CLANG_TOOL} ${SOURCE_FILE_NAME}
             COMMAND ${CMAKE_COMMAND} -E echo "Removing temporary file '${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE_NAME}' generated after building ${target}"
             COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE_NAME}
         )

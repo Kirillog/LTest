@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "logger.h"
+#include "value_wrapper.h"
 #include "yield_guard.h"
 
 // See comments in the lib.h.
@@ -42,7 +43,7 @@ void CoroBase::Resume() {
 
 int CoroBase::GetId() const { return id; }
 
-uint64_t CoroBase::GetRetVal() const {
+ValueWrapper CoroBase::GetRetVal() const {
   assert(IsReturned());
   return ret;
 }
