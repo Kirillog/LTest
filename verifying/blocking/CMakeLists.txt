@@ -4,6 +4,7 @@ set (SOURCE_TARGET_LIST
     nonlinear_mutex.cpp
     shared_mutexed_register.cpp
     bank.cpp
+    buffered_channel.cpp
 )
 
 set (FOLLY_SOURCE_TARGET_LIST

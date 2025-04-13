@@ -1,11 +1,13 @@
 #include <mutex>
 
+#include "runtime/include/lib.h"
 #include "runtime/include/verifying.h"
 #include "verifying/specs/register.h"
 
 struct Register {
   non_atomic void add() {
     while (!m_.try_lock()) {
+      CoroYield();
     }
     ++x_;
     m_.unlock();

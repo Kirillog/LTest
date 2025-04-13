@@ -45,7 +45,7 @@ jobs:
         run: |
           cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug
           cmake --build build --target verifying/targets/nonlinear_queue verifying/targets/nonlinear_ms_queue verifying/targets/nonlinear_treiber_stack verifying/targets/nonlinear_set verifying/blocking/nonlinear_mutex \
-              verifying/blocking/simple_mutex verifying/blocking/bank verifying/blocking/mutexed_register verifying/blocking/shared_mutexed_register
+              verifying/blocking/simple_mutex verifying/blocking/bank verifying/blocking/mutexed_register verifying/blocking/shared_mutexed_register verifying/blocking/buffered_channel
       - name: Run nonlinear_queue with random strategy
         run: |
           ./scripts/check.sh 3 ./build/verifying/targets/nonlinear_queue --rounds 10000 --strategy random
@@ -88,6 +88,9 @@ jobs:
       - name: Run mutexed_register with random strategy
         run: |
           ./scripts/check.sh 0 ./build/verifying/blocking/mutexed_register --strategy random --rounds 100
+      - name: Run buffered_channel with pct strategy
+        run: |
+          ./scripts/check.sh 0 ./build/verifying/blocking/buffered_channel --strategy pct --rounds 100 
   verifying-test-release:
     runs-on: ubuntu-latest
     defaults:
@@ -109,7 +112,7 @@ jobs:
         run: |
           cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target verifying/targets/nonlinear_queue verifying/targets/nonlinear_ms_queue verifying/targets/nonlinear_treiber_stack verifying/targets/nonlinear_set verifying/blocking/nonlinear_mutex \
-              verifying/blocking/simple_mutex verifying/blocking/bank verifying/blocking/mutexed_register verifying/blocking/shared_mutexed_register
+              verifying/blocking/simple_mutex verifying/blocking/bank verifying/blocking/mutexed_register verifying/blocking/shared_mutexed_register verifying/blocking/buffered_channel
       - name: Run nonlinear_queue with random strategy (minimization)
         run: |
           ./scripts/check.sh 3 ./build/verifying/targets/nonlinear_queue --tasks 40 --rounds 100000 --strategy random --minimize
@@ -164,6 +167,9 @@ jobs:
       - name: Run mutexed_register with random strategy
         run: |
           ./scripts/check.sh 0 ./build/verifying/blocking/mutexed_register --strategy random --rounds 10000
+      - name: Run buffered_channel with pct strategy
+        run: |
+          ./scripts/check.sh 0 ./build/verifying/blocking/buffered_channel --strategy pct --rounds 10000
   verifying-folly-release:
     runs-on: ubuntu-latest
     env:

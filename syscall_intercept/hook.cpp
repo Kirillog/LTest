@@ -23,7 +23,8 @@ static int hook(long syscall_number, long arg0, long arg1, long arg2, long arg3,
   } else if (syscall_number == SYS_futex) {
     debug(stderr, "caught futex(0x%lx, %ld), exp: %ld, cur: %d\n",
           (unsigned long)arg0, arg1, arg2, *((int *)arg0));
-    if (arg1 == FUTEX_WAIT_PRIVATE || arg1 == FUTEX_WAIT_BITSET_PRIVATE) {
+    arg1 = arg1 & FUTEX_CMD_MASK;
+    if (arg1 == FUTEX_WAIT || arg1 == FUTEX_WAIT_BITSET) {
       auto fstate = FutexState{arg0, arg2};
       if (fstate.CanBeBlocked()) {
         this_coro->SetBlocked(fstate);
@@ -34,8 +35,7 @@ static int hook(long syscall_number, long arg0, long arg1, long arg2, long arg3,
         errno = EAGAIN;
         *result = 1;
       }
-    } else if (arg1 == FUTEX_WAKE_PRIVATE ||
-               arg1 == FUTEX_WAKE_BITSET_PRIVATE) {
+    } else if (arg1 == FUTEX_WAKE || arg1 == FUTEX_WAKE_BITSET) {
       debug(stderr, "caught wake\n");
       *result = futex_queues.Pop(arg0, arg2);
     } else {
