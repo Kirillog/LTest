@@ -20,7 +20,7 @@ struct TypeName {
   enum : int { TemplateName, SimpleName };
 
   static int of(std::string_view name) {
-    if (name == "::std::mutex" || name == "::std::shared_mutex") {
+    if (name == "::std::mutex" || name == "::std::shared_mutex" || name == "::std::condition_variable") {
       return TypeName::SimpleName;
     } else if (name == "::std::atomic") {
       return TypeName::TemplateName;

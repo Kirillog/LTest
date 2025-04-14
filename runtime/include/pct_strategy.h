@@ -33,8 +33,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
 
   size_t NextThreadId() override {
     auto& threads = this->threads;
-    ssize_t max = std::numeric_limits<ssize_t>::min();
-    ssize_t snd_max = std::numeric_limits<ssize_t>::min();
+    int max = std::numeric_limits<int>::min();
+    int snd_max = std::numeric_limits<int>::min();
     size_t index_of_max = 0, index_of_snd_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
@@ -62,7 +62,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
 
     // TODO: Choose wiser constant
     if (count_chosen_same == 100 && index_of_max == last_chosen &&
-        snd_max != std::numeric_limits<ssize_t>::min()) {
+        snd_max != std::numeric_limits<int>::min()) {
       priorities[index_of_max] = snd_max - 1;
       index_of_max = index_of_snd_max;
     }
@@ -73,7 +73,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       count_chosen_same = 1;
     }
 
-    assert(max != std::numeric_limits<ssize_t>::min() &&
+    assert(max != std::numeric_limits<int>::min() &&
            "all threads are empty or blocked");
 
     // Check whether the priority change is required
@@ -95,8 +95,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   TaskWithMetaData NextSchedule() override {
     auto& round_schedule = this->round_schedule;
     auto& threads = this->threads;
-    ssize_t max = std::numeric_limits<ssize_t>::min();
-    ssize_t snd_max = std::numeric_limits<ssize_t>::min();
+    int max = std::numeric_limits<int>::min();
+    int snd_max = std::numeric_limits<int>::min();
     size_t index_of_max = 0, index_of_snd_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
@@ -124,7 +124,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
 
     // TODO: Choose wiser constant
     if (count_chosen_same == 100 && index_of_max == last_chosen &&
-        snd_max != std::numeric_limits<ssize_t>::min()) {
+        snd_max != std::numeric_limits<int>::min()) {
       priorities[index_of_max] = snd_max - 1;
       index_of_max = index_of_snd_max;
     }
@@ -188,7 +188,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
 
   void PrepareForDepth(size_t depth, size_t k) {
     // Generates priorities
-    priorities = std::vector<ssize_t>(this->threads_count);
+    priorities = std::vector<int>(this->threads_count);
     for (size_t i = 0; i < priorities.size(); ++i) {
       priorities[i] = current_depth + i;
     }
@@ -210,7 +210,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   // original article)
   size_t count_chosen_same;
   size_t last_chosen;
-  std::vector<ssize_t> priorities;
+  std::vector<int> priorities;
   std::vector<size_t> priority_change_points;
   std::mt19937 rng;
 };

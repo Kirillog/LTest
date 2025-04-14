@@ -72,8 +72,16 @@ struct BufferedChannelVerifier {
       return true;
     }
     if (taskName == "Send") {
-      return size_ + THREAD_COUNT < N;
+      if (senders_ == 0) {
+        ++senders_;
+        ++size_;
+        return true;
+      } 
+      return false;
     } else if (taskName == "TryRecv") {
+      if (size_ > 0) {
+        --size_;
+      }
       return true;
     } else {
       assert(false);
@@ -83,17 +91,16 @@ struct BufferedChannelVerifier {
   void OnFinished(TaskWithMetaData ctask) {
     auto [task, is_new, thread_id] = ctask;
     auto taskName = task->GetName();
+    debug(stderr, "On finished method %s, thread_id: %zu, size: %zu\n",
+      taskName.data(), thread_id, size_);
     if (taskName == "Send") {
-      ++size_;
+      --senders_;
+      return;
     } else if (taskName == "TryRecv") {
-      if (size_ > 0) {
-        --size_;
-      }
+      return;
     } else {
       assert(false);
     }
-    debug(stderr, "On finished method %s, thread_id: %zu, size: %zu\n",
-          taskName.data(), thread_id, size_);
   }
 
   std::optional<std::string> ReleaseTask(size_t thread_id) {
@@ -103,6 +110,7 @@ struct BufferedChannelVerifier {
     return std::nullopt;
   }
 
+  size_t senders_;
   size_t size_;
 };
 
@@ -110,8 +118,10 @@ struct BufferedChannel {
   non_atomic int Send(int v) {
     std::unique_lock lock{mutex_};
     while (!closed_ && full_) {
+      debug(stderr, "Waiting...\n");
       send_side_cv_.wait(lock);
     }
+    debug(stderr, "Send\n");
 
     queue_[sidx_] = v;
     sidx_ = (sidx_ + 1) % N;
@@ -122,7 +132,7 @@ struct BufferedChannel {
 
   // TryRecv is not blocking otherwise it is dual structure
   non_atomic int TryRecv() {
-    std::unique_lock lock{mutex_};
+    std::lock_guard lock{mutex_};
     if (closed_ || empty_) {
       return -1;
     }

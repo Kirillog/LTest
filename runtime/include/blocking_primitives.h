@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include "futex.h"
 #include "lib.h"
 #include "verifying_macro.h"
@@ -26,12 +27,14 @@ struct mutex {
   as_atomic void unlock() {
     locked = 0;
     futex_queues.PopAll(
-        state.addr);  // Two have the ability schedule any coroutine
+        state.addr);  // To have the ability schedule any coroutine
   }
 
  private:
   int locked{0};
   FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};
+
+  friend struct condition_variable;
 };
 
 struct shared_mutex {
@@ -55,11 +58,35 @@ struct shared_mutex {
   }
   as_atomic void unlock_shared() {
     --locked;
-    futex_queues.PopAll(state.addr);
+    if (locked == 0) {
+      futex_queues.PopAll(state.addr);
+    }
   }
 
  private:
   int locked{0};
   FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};
 };
+
+struct condition_variable {
+
+  void wait(std::unique_lock<ltest::mutex>& lock) {
+    addr = lock.mutex()->state.addr;
+    lock.unlock();
+    this_coro->SetBlocked({addr, 1});
+    CoroYield();
+    lock.lock();
+  }
+
+  void notify_one() {
+    futex_queues.Pop(addr, 1);
+  }
+
+  void notify_all() {
+    futex_queues.PopAll(addr);
+  }
+private:
+  std::intptr_t addr;
+};
+
 }  // namespace ltest
