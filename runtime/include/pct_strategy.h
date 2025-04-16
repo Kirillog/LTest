@@ -34,8 +34,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   size_t NextThreadId() override {
     auto& threads = this->threads;
     int max = std::numeric_limits<int>::min();
-    int snd_max = std::numeric_limits<int>::min();
-    size_t index_of_max = 0, index_of_snd_max = 0;
+    size_t index_of_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
       // Ignore waiting tasks
@@ -51,21 +50,31 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       }
 
       if (max <= priorities[i]) {
-        index_of_snd_max = index_of_max;
-        snd_max = max;
         max = priorities[i];
         index_of_max = i;
-      } else if (snd_max <= priorities[i]) {
-        snd_max = priorities[i];
-        index_of_snd_max = i;
+      }
+    }
+
+    if (round_robin_stage > 0) {
+      for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
+        auto i = (++last_chosen) % threads.size();
+        if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
+          continue;
+        }
+        index_of_max = i;
+        max = priorities[i];
+        break;
+      }
+      // debug(stderr, "round robin choose: %d\n", index_of_max);
+      if (round_robin_start == index_of_max) {
+        --round_robin_stage;
       }
     }
 
     // TODO: Choose wiser constant
-    if (count_chosen_same == 100 && index_of_max == last_chosen &&
-        snd_max != std::numeric_limits<int>::min()) {
-      priorities[index_of_max] = snd_max - 1;
-      index_of_max = index_of_snd_max;
+    if (count_chosen_same == 1000 && index_of_max == last_chosen) {
+      round_robin_stage = 5;
+      round_robin_start = index_of_max;
     }
 
     if (index_of_max == last_chosen) {
@@ -97,8 +106,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     auto& round_schedule = this->round_schedule;
     auto& threads = this->threads;
     int max = std::numeric_limits<int>::min();
-    int snd_max = std::numeric_limits<int>::min();
-    size_t index_of_max = 0, index_of_snd_max = 0;
+    size_t index_of_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
       int task_index = this->GetNextTaskInThread(i);
@@ -113,21 +121,33 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       }
 
       if (max <= priorities[i]) {
-        index_of_snd_max = index_of_max;
-        snd_max = max;
         max = priorities[i];
         index_of_max = i;
-      } else if (snd_max <= priorities[i]) {
-        snd_max = priorities[i];
-        index_of_snd_max = i;
+      }
+    }
+
+    if (round_robin_stage > 0) {
+      for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
+        auto i = (++last_chosen) % threads.size();
+        int task_index = this->GetNextTaskInThread(i);
+        if (task_index == threads[i].size() ||
+            threads[i][task_index]->IsBlocked()) {
+          continue;
+        }
+        index_of_max = i;
+        max = priorities[i];
+        break;
+      }
+      // debug(stderr, "round robin choose: %d\n", index_of_max);
+      if (round_robin_start == index_of_max) {
+        --round_robin_stage;
       }
     }
 
     // TODO: Choose wiser constant
-    if (count_chosen_same == 100 && index_of_max == last_chosen &&
-        snd_max != std::numeric_limits<int>::min()) {
-      priorities[index_of_max] = snd_max - 1;
-      index_of_max = index_of_snd_max;
+    if (count_chosen_same == 1000 && index_of_max == last_chosen) {
+      round_robin_stage = 5;
+      round_robin_start = index_of_max;
     }
 
     if (index_of_max == last_chosen) {
@@ -135,7 +155,6 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     } else {
       count_chosen_same = 1;
     }
-
     last_chosen = index_of_max;
     // Picked thread is `index_of_max`
     int next_task_index = this->GetNextTaskInThread(index_of_max);
@@ -179,6 +198,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     k_statistics.push_back(current_schedule_length);
     current_schedule_length = 0;
     count_chosen_same = 0;
+    round_robin_stage = 0;
 
     // current_depth have been increased
     size_t new_k = std::reduce(k_statistics.begin(), k_statistics.end()) /
@@ -211,6 +231,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   // original article)
   size_t count_chosen_same;
   size_t last_chosen;
+  size_t round_robin_start;
+  size_t round_robin_stage{0};
   std::vector<int> priorities;
   std::vector<size_t> priority_change_points;
   std::mt19937 rng;

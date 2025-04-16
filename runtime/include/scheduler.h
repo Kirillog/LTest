@@ -164,7 +164,7 @@ struct BaseStrategyWithThreads : public Strategy {
       size_t tasks_in_thread = thread.size();
       for (size_t i = 0; i < tasks_in_thread; ++i) {
         if (!IsTaskRemoved(thread[i]->GetId())) {
-          thread[i] = thread[i]->Restart(&*state);
+          thread[i] = thread[i]->Restart(state.get());
         }
       }
     }
@@ -220,7 +220,7 @@ struct BaseStrategyWithThreads : public Strategy {
       }
       threads[thread_index].emplace_back(
           this->constructors[verified_constructor].Build(
-              &*this->state, thread_index, this->new_task_id++));
+              this->state.get(), thread_index, this->new_task_id++));
       TaskWithMetaData task{threads[thread_index].back(), true, thread_index};
       return task;
     }
@@ -264,7 +264,7 @@ struct BaseStrategyWithThreads : public Strategy {
                                 return b.GetName() == *releaseTask;
                               });
             auto task =
-                constructor.Build(&*this->state, thread_index, task_index);
+                constructor.Build(this->state.get(), thread_index, task_index);
             auto verified = this->sched_checker.Verify(CreatedTaskMetaData{
                 std::string(task->GetName()), true, thread_index});
             assert(verified && "wrong release task at termination");
@@ -615,7 +615,7 @@ struct TLAScheduler : Scheduler {
       if (frame.is_new) {
         // It was a new task.
         // So restart it from the beginning with the same args.
-        *task = (*task)->Restart(&*state);
+        *task = (*task)->Restart(state.get());
       } else {
         // It was a not new task, hence, we recreated in early.
       }
@@ -732,7 +732,7 @@ struct TLAScheduler : Scheduler {
       for (size_t cons_num = 0; auto cons : constructors) {
         frame.is_new = true;
         auto size_before = tasks.size();
-        tasks.emplace_back(cons.Build(&*state, i, -1 /* TODO: fix task id for tla, because it is Scheduler and not Strategy class for some reason */));
+        tasks.emplace_back(cons.Build(state.get(), i, -1 /* TODO: fix task id for tla, because it is Scheduler and not Strategy class for some reason */));
 
         auto [is_over, res] = ResumeTask(frame, step, switches, thread, true);
         if (is_over || res.has_value()) {
