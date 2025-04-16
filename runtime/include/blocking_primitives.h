@@ -1,5 +1,6 @@
 #pragma once
 #include <mutex>
+
 #include "futex.h"
 #include "lib.h"
 #include "verifying_macro.h"
@@ -58,9 +59,7 @@ struct shared_mutex {
   }
   as_atomic void unlock_shared() {
     --locked;
-    if (locked == 0) {
-      futex_queues.PopAll(state.addr);
-    }
+    futex_queues.PopAll(state.addr);
   }
 
  private:
@@ -69,8 +68,7 @@ struct shared_mutex {
 };
 
 struct condition_variable {
-
-  void wait(std::unique_lock<ltest::mutex>& lock) {
+  as_atomic void wait(std::unique_lock<ltest::mutex>& lock) {
     addr = lock.mutex()->state.addr;
     lock.unlock();
     this_coro->SetBlocked({addr, 1});
@@ -78,14 +76,11 @@ struct condition_variable {
     lock.lock();
   }
 
-  void notify_one() {
-    futex_queues.Pop(addr, 1);
-  }
+  as_atomic void notify_one() { futex_queues.Pop(addr, 1); }
 
-  void notify_all() {
-    futex_queues.PopAll(addr);
-  }
-private:
+  as_atomic void notify_all() { futex_queues.PopAll(addr); }
+
+ private:
   std::intptr_t addr;
 };
 

@@ -45,11 +45,14 @@ struct YieldInserter {
 
   void Run(const FunIndex &index) {
     for (auto &F : M) {
+      if (IsAtomic(F.getName(), index)) {
+        CollectAtomic(F, index);
+      }
+    }
+
+    for (auto &F : M) {
       if (IsNonAtomic(F.getName(), index)) {
         InsertYields(F, index);
-
-        errs() << "yields inserted to the " << F.getName() << "\n";
-        errs() << F << "\n";
       }
     }
   }
@@ -72,11 +75,40 @@ struct YieldInserter {
     return false;
   }
 
-  void InsertYields(Function &F, const FunIndex &index) {
+  void CollectAtomic(Function &F, const FunIndex &index) {
     auto name = F.getName();
-    if (visited.find(name) != visited.end()) {
+    if (atomic.find(name) != atomic.end()) {
       return;
     }
+    atomic.insert(name);
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (auto call = dyn_cast<CallInst>(&I)) {
+          auto fun = call->getCalledFunction();
+          if (fun && !fun->isDeclaration()) {
+            CollectAtomic(*fun, index);
+          }
+        }
+        if (auto invoke = dyn_cast<InvokeInst>(&I)) {
+          auto fun = invoke->getCalledFunction();
+          if (fun && !fun->isDeclaration()) {
+            CollectAtomic(*fun, index);
+          }
+        }
+      }
+    }
+  }
+
+  void InsertYields(Function &F, const FunIndex &index) {
+    auto name = F.getName();
+    if (visited.find(name) != visited.end() ||
+        atomic.find(name) != atomic.end()) {
+      return;
+    }
+
+    errs() << "yields inserted to the " << F.getName() << "\n";
+    errs() << F << "\n";
+
     visited.insert(name);
 
     Builder Builder(&*F.begin());
@@ -95,15 +127,13 @@ struct YieldInserter {
       for (auto &I : B) {
         if (auto call = dyn_cast<CallInst>(&I)) {
           auto fun = call->getCalledFunction();
-          if (fun && !fun->isDeclaration() &&
-              !IsAtomic(fun->getName(), index)) {
+          if (fun && !fun->isDeclaration()) {
             InsertYields(*fun, index);
           }
         }
         if (auto invoke = dyn_cast<InvokeInst>(&I)) {
           auto fun = invoke->getCalledFunction();
-          if (fun && !fun->isDeclaration() &&
-              !IsAtomic(fun->getName(), index)) {
+          if (fun && !fun->isDeclaration()) {
             InsertYields(*fun, index);
           }
         }
@@ -127,6 +157,7 @@ struct YieldInserter {
   Module &M;
   FunctionCallee CoroYieldF;
   std::set<StringRef> visited{};
+  std::set<StringRef> atomic{};
 };
 
 namespace {

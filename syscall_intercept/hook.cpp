@@ -28,7 +28,6 @@ static int hook(long syscall_number, long arg0, long arg1, long arg2, long arg3,
       auto fstate = FutexState{arg0, arg2};
       if (fstate.CanBeBlocked()) {
         this_coro->SetBlocked(fstate);
-        futex_queues.Push(fstate, this_coro.get());
         CoroYield();
         *result = 0;
       } else {

@@ -76,7 +76,7 @@ struct BufferedChannelVerifier {
         ++senders_;
         ++size_;
         return true;
-      } 
+      }
       return false;
     } else if (taskName == "TryRecv") {
       if (size_ > 0) {
@@ -92,7 +92,7 @@ struct BufferedChannelVerifier {
     auto [task, is_new, thread_id] = ctask;
     auto taskName = task->GetName();
     debug(stderr, "On finished method %s, thread_id: %zu, size: %zu\n",
-      taskName.data(), thread_id, size_);
+          taskName.data(), thread_id, size_);
     if (taskName == "Send") {
       --senders_;
       return;

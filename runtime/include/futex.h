@@ -36,7 +36,12 @@ struct FutexQueues {
     return wakes;
   }
 
-  void PopAll(std::intptr_t addr) { queues[addr].clear(); }
+  void PopAll(std::intptr_t addr) {
+    if (!queues.contains(addr)) {
+      return;
+    }
+    queues[addr].clear();
+  }
 };
 
 extern FutexQueues futex_queues;

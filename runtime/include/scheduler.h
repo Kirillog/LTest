@@ -284,7 +284,6 @@ struct BaseStrategyWithThreads : public Strategy {
         }
       }
     }
-
     state.reset(new TargetObj{});
   }
 
@@ -341,7 +340,6 @@ struct StrategyScheduler : public SchedulerWithReplay {
   Scheduler::Result Run() override {
     for (size_t i = 0; i < max_rounds; ++i) {
       log() << "run round: " << i << "\n";
-      debug(stderr, "run round: %ld\n", i);
       auto histories = RunRound();
 
       if (histories.has_value()) {

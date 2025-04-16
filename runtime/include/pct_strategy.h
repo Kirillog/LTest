@@ -39,9 +39,10 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
       // Ignore waiting tasks
-      debug(stderr, "prior: %d, number %d\n", priorities[i], i);
+      // debug(stderr, "prior: %d, number %d\n", priorities[i], i);
       if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
-        // debug(stderr, "blocked\n", priorities[i], i);
+        // debug(stderr, "blocked on %p val %d\n",
+        // threads[i].back()->fstate.addr, threads[i].back()->fstate.value);
         // dual waiting if request finished, but follow up isn't
         // skip dual tasks that already have finished the request
         // section(follow-up will be executed in another task, so we can't
@@ -84,8 +85,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       }
     }
 
-    debug(stderr, "Chosen thread: %d, cnt_count: %d\n", index_of_max,
-          count_chosen_same);
+    // debug(stderr, "Chosen thread: %d, cnt_count: %d\n", index_of_max,
+    //      count_chosen_same);
     last_chosen = index_of_max;
     return index_of_max;
   }

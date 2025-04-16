@@ -67,7 +67,10 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Terminate the coroutine.
   void Terminate();
 
-  void SetBlocked(const FutexState& state) { fstate = state; }
+  void SetBlocked(const FutexState& state) {
+    fstate = state;
+    futex_queues.Push(state, this);
+  }
 
   bool IsBlocked() { return futex_queues.IsBlocked(fstate, this); }
 
@@ -94,6 +97,7 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Is coroutine returned.
   bool is_returned{};
   // Futex state on which coroutine is blocked.
+ public:
   FutexState fstate{};
   // Name.
   std::string_view name;
