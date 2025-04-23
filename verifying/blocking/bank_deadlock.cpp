@@ -1,11 +1,12 @@
-#include "verifying/specs/bank.h"
-
 #include <cstddef>
 #include <deque>
+#include <mutex>
 #include <shared_mutex>
 #include <tuple>
 
 #include "runtime/include/verifying.h"
+#include "runtime/include/verifying_macro.h"
+#include "verifying/specs/bank.h"
 
 class Bank {
  private:
@@ -25,31 +26,25 @@ class Bank {
   }
 
   non_atomic int Add(int i, size_t count) {
-    // debug(stderr, "Add [%d] %lu\n", i, count);
     std::lock_guard lock{cells_[i].m};
     cells_[i].amount += count;
     return 0;
   }
 
   non_atomic int Read(int i) {
-    // debug(stderr, "Read [%d]\n", i);
     std::shared_lock lock{cells_[i].m};
     return cells_[i].amount;
   }
 
   non_atomic int Transfer(int i, int j, size_t count) {
-    // debug(stderr, "Transfer [%d] -> [%d] %lu\n", i, j, count);
-
-    int first = std::min(i, j);
-    int second = std::max(i, j);
     int res;
-    if (first == second) {
-      std::shared_lock lock_first{cells_[first].m};
+    if (i == j) {
+      std::shared_lock lock_first{cells_[i].m};
       res = count <= cells_[i].amount;
     } else {
-      std::lock_guard lock_first{cells_[first].m};
+      std::lock_guard lock_first{cells_[i].m};
       {
-        std::lock_guard lock_second{cells_[second].m};
+        std::lock_guard lock_second{cells_[j].m};
         if (cells_[i].amount < count) {
           res = 0;
         } else {
@@ -63,17 +58,14 @@ class Bank {
   }
 
   non_atomic int ReadBoth(int i, int j) {
-    // debug(stderr, "ReadBoth [%d], [%d] \n", i, j);
-    int first = std::min(i, j);
-    int second = std::max(i, j);
     int res;
-    if (first == second) {
-      std::shared_lock lock_first{cells_[first].m};
+    if (i == j) {
+      std::shared_lock lock_first{cells_[i].m};
       res = cells_[i].amount * 2;
     } else {
-      std::shared_lock lock_first{cells_[first].m};
+      std::shared_lock lock_first{cells_[i].m};
       {
-        std::shared_lock lock_second{cells_[second].m};
+        std::shared_lock lock_second{cells_[j].m};
         res = cells_[i].amount + cells_[j].amount;
       }
     }

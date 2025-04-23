@@ -5,6 +5,8 @@ set (SOURCE_TARGET_LIST
     shared_mutexed_register.cpp
     bank.cpp
     buffered_channel.cpp
+    simple_deadlock.cpp
+    bank_deadlock.cpp
 )
 
 set (FOLLY_SOURCE_TARGET_LIST

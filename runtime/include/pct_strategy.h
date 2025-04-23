@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <limits>
+#include <optional>
 #include <random>
 
 #include "scheduler.h"
@@ -25,15 +27,9 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     PrepareForDepth(current_depth, avg_k);
   }
 
-  // If there aren't any non returned tasks and the amount of finished tasks
-  // is equal to the max_tasks the finished task will be returned
-  TaskWithMetaData Next() override {
-    return this->NextVerifiedFor(NextThreadId());
-  }
-
-  size_t NextThreadId() override {
+  std::optional<size_t> NextThreadId() override {
     auto& threads = this->threads;
-    int max = std::numeric_limits<int>::min();
+    size_t max = std::numeric_limits<size_t>::min();
     size_t index_of_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
@@ -41,7 +37,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       // debug(stderr, "prior: %d, number %d\n", priorities[i], i);
       if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
         // debug(stderr, "blocked on %p val %d\n",
-        // threads[i].back()->fstate.addr, threads[i].back()->fstate.value);
+        // threads[i].back()->GetFutexState().addr,
+        // threads[i].back()->GetFutexState().value);
         // dual waiting if request finished, but follow up isn't
         // skip dual tasks that already have finished the request
         // section(follow-up will be executed in another task, so we can't
@@ -55,7 +52,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       }
     }
 
-    if (round_robin_stage > 0) {
+    if (round_robin_stage > 0) [[unlikely]] {
       for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
         auto i = (++last_chosen) % threads.size();
         if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
@@ -72,7 +69,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     }
 
     // TODO: Choose wiser constant
-    if (count_chosen_same == 1000 && index_of_max == last_chosen) {
+    if (count_chosen_same == 1000 && index_of_max == last_chosen) [[unlikely]] {
       round_robin_stage = 5;
       round_robin_start = index_of_max;
     }
@@ -83,8 +80,9 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       count_chosen_same = 1;
     }
 
-    assert(max != std::numeric_limits<int>::min() &&
-           "all threads are empty or blocked");
+    if (max == std::numeric_limits<size_t>::min()) [[unlikely]] {
+      return std::nullopt;
+    }
 
     // Check whether the priority change is required
     current_schedule_length++;
@@ -95,17 +93,17 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     }
 
     // debug(stderr, "Chosen thread: %d, cnt_count: %d\n", index_of_max,
-    //      count_chosen_same);
+    // count_chosen_same);
     last_chosen = index_of_max;
     return index_of_max;
   }
 
   // NOTE: `Next` version use heuristics for livelock avoiding, but not there
   // refactor later to avoid copy-paste
-  TaskWithMetaData NextSchedule() override {
+  std::optional<TaskWithMetaData> NextSchedule() override {
     auto& round_schedule = this->round_schedule;
     auto& threads = this->threads;
-    int max = std::numeric_limits<int>::min();
+    size_t max = std::numeric_limits<size_t>::min();
     size_t index_of_max = 0;
     // Have to ignore waiting threads, so can't do it faster than O(n)
     for (size_t i = 0; i < threads.size(); ++i) {
@@ -126,7 +124,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       }
     }
 
-    if (round_robin_stage > 0) {
+    if (round_robin_stage > 0) [[unlikely]] {
       for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
         auto i = (++last_chosen) % threads.size();
         int task_index = this->GetNextTaskInThread(i);
@@ -145,7 +143,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     }
 
     // TODO: Choose wiser constant
-    if (count_chosen_same == 1000 && index_of_max == last_chosen) {
+    if (count_chosen_same == 1000 && index_of_max == last_chosen) [[unlikely]] {
       round_robin_stage = 5;
       round_robin_start = index_of_max;
     }
@@ -155,6 +153,11 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
     } else {
       count_chosen_same = 1;
     }
+
+    if (max == std::numeric_limits<size_t>::min()) {
+      return std::nullopt;
+    }
+
     last_chosen = index_of_max;
     // Picked thread is `index_of_max`
     int next_task_index = this->GetNextTaskInThread(index_of_max);

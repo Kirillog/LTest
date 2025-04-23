@@ -46,15 +46,15 @@ concept StrategyVerifier = requires(T a) {
 // will be the next one it can be implemented by different strategies, such as:
 // randomized/tla/fair
 struct Strategy {
-  virtual size_t NextThreadId() = 0;
+  virtual std::optional<size_t> NextThreadId() = 0;
 
-  virtual TaskWithMetaData Next() = 0;
+  virtual std::optional<TaskWithMetaData> Next() = 0;
 
   // Returns the same data as `Next` method. However, it does not generate the
   // round by inserting new tasks in it, but schedules the threads accoding to
   // the strategy policy with previously genereated and saved round (used for
   // round replaying functionality)
-  virtual TaskWithMetaData NextSchedule() = 0;
+  virtual std::optional<TaskWithMetaData> NextSchedule() = 0;
 
   // Returns { task, its thread id } (TODO: make it `const` method)
   virtual std::optional<std::tuple<Task&, int>> GetTask(int task_id) = 0;
@@ -197,9 +197,16 @@ struct BaseStrategyWithThreads : public Strategy {
     sched_checker.OnFinished(task);
   }
 
-  TaskWithMetaData Next() override { return NextVerifiedFor(NextThreadId()); }
+  std::optional<TaskWithMetaData> Next() override {
+    return NextVerifiedFor(NextThreadId());
+  }
 
-  TaskWithMetaData NextVerifiedFor(size_t thread_index) {
+  std::optional<TaskWithMetaData> NextVerifiedFor(
+      std::optional<size_t> opt_thread_index) {
+    if (!opt_thread_index.has_value()) {
+      return std::nullopt;
+    }
+    size_t thread_index = opt_thread_index.value();
     // it's the first task if the queue is empty
     if (threads[thread_index].empty() ||
         threads[thread_index].back()->IsReturned()) {
@@ -221,11 +228,10 @@ struct BaseStrategyWithThreads : public Strategy {
       threads[thread_index].emplace_back(
           this->constructors[verified_constructor].Build(
               this->state.get(), thread_index, this->new_task_id++));
-      TaskWithMetaData task{threads[thread_index].back(), true, thread_index};
-      return task;
+      return TaskWithMetaData{threads[thread_index].back(), true, thread_index};
     }
 
-    return {threads[thread_index].back(), false, thread_index};
+    return TaskWithMetaData{threads[thread_index].back(), false, thread_index};
   }
 
  protected:
@@ -343,7 +349,7 @@ struct StrategyScheduler : public SchedulerWithReplay {
       auto histories = RunRound();
 
       if (histories.has_value()) {
-        auto& [full_history, sequential_history] = histories.value();
+        auto& [full_history, sequential_history, reason] = histories.value();
 
         if (should_minimize_history) {
           log() << "Full nonlinear scenario: \n";
@@ -387,9 +393,15 @@ struct StrategyScheduler : public SchedulerWithReplay {
     // Full history of the current execution in the Run function
     FullHistory full_history;
 
+    bool deadlock_detected{false};
+
     for (size_t finished_tasks = 0; finished_tasks < max_tasks;) {
       auto t = strategy.Next();
-      auto [next_task, is_new, thread_id] = t;
+      if (!t.has_value()) {
+        deadlock_detected = true;
+        break;
+      }
+      auto [next_task, is_new, thread_id] = t.value();
 
       // fill the sequential history
       if (is_new) {
@@ -400,7 +412,7 @@ struct StrategyScheduler : public SchedulerWithReplay {
       next_task->Resume();
       if (next_task->IsReturned()) {
         finished_tasks++;
-        strategy.OnVerifierTaskFinish(t);
+        strategy.OnVerifierTaskFinish(t.value());
 
         auto result = next_task->GetRetVal();
         sequential_history.emplace_back(Response(next_task, result, thread_id));
@@ -410,8 +422,15 @@ struct StrategyScheduler : public SchedulerWithReplay {
 
     pretty_printer.PrettyPrint(sequential_history, log());
 
+    if (deadlock_detected) {
+      return NonLinearizableHistory(full_history, sequential_history,
+                                    NonLinearizableHistory::Reason::DEADLOCK);
+    }
+
     if (!checker.Check(sequential_history)) {
-      return std::make_pair(full_history, sequential_history);
+      return NonLinearizableHistory(
+          full_history, sequential_history,
+          NonLinearizableHistory::Reason::NON_LINEARIZABLE_HISTORY);
     }
 
     return std::nullopt;
@@ -425,9 +444,16 @@ struct StrategyScheduler : public SchedulerWithReplay {
       SeqHistory sequential_history;
       FullHistory full_history;
 
+      bool deadlock_detected{false};
+
       for (int tasks_to_run = strategy.GetValidTasksCount();
            tasks_to_run > 0;) {
-        auto [next_task, is_new, thread_id] = strategy.NextSchedule();
+        auto t = strategy.NextSchedule();
+        if (!t.has_value()) {
+          deadlock_detected = true;
+          break;
+        }
+        auto [next_task, is_new, thread_id] = t.value();
 
         if (is_new) {
           sequential_history.emplace_back(Invoke(next_task, thread_id));
@@ -437,6 +463,7 @@ struct StrategyScheduler : public SchedulerWithReplay {
         next_task->Resume();
         if (next_task->IsReturned()) {
           tasks_to_run--;
+          strategy.OnVerifierTaskFinish(t.value());
 
           auto result = next_task->GetRetVal();
           sequential_history.emplace_back(
@@ -444,10 +471,17 @@ struct StrategyScheduler : public SchedulerWithReplay {
         }
       }
 
+      if (deadlock_detected) {
+        return NonLinearizableHistory(full_history, sequential_history,
+                                      NonLinearizableHistory::Reason::DEADLOCK);
+      }
+
       if (!checker.Check(sequential_history)) {
         // log() << "New nonlinearized scenario:\n";
         // pretty_printer.PrettyPrint(sequential_history, log());
-        return std::make_pair(full_history, sequential_history);
+        return NonLinearizableHistory(
+            full_history, sequential_history,
+            NonLinearizableHistory::Reason::NON_LINEARIZABLE_HISTORY);
       }
     }
 
@@ -508,7 +542,9 @@ struct StrategyScheduler : public SchedulerWithReplay {
     // pretty_printer.PrettyPrint(sequential_history, log());
 
     if (!checker.Check(sequential_history)) {
-      return std::make_pair(full_history, sequential_history);
+      return NonLinearizableHistory(
+          full_history, sequential_history,
+          NonLinearizableHistory::Reason::NON_LINEARIZABLE_HISTORY);
     }
 
     return std::nullopt;
@@ -518,7 +554,7 @@ struct StrategyScheduler : public SchedulerWithReplay {
 
   // Minimizes number of tasks in the nonlinearized history preserving threads
   // interleaving. Modifies argument `nonlinear_history`.
-  void Minimize(BothHistories& nonlinear_history,
+  void Minimize(NonLinearizableHistory& nonlinear_history,
                 const RoundMinimizor& minimizor) override {
     minimizor.Minimize(*this, nonlinear_history);
   }
@@ -676,7 +712,9 @@ struct TLAScheduler : Scheduler {
       ++finished_rounds;
       if (!checker.Check(sequential_history)) {
         return {false,
-                std::make_pair(Scheduler::FullHistory{}, sequential_history)};
+                NonLinearizableHistory(
+                    FullHistory{}, sequential_history,
+                    NonLinearizableHistory::Reason::NON_LINEARIZABLE_HISTORY)};
       }
       if (finished_rounds == max_rounds) {
         // It was the last round.

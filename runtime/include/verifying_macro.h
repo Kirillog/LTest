@@ -18,6 +18,10 @@ extern std::vector<TaskBuilder> task_builders;
 // Tell that the function need to be converted to the coroutine.
 #define non_atomic attr(ltest_nonatomic)
 // Tell that the function must not contain interleavings.
+// Note that all functions that can be reached recursively from this function is
+// marked `as_atomic` also, so in the implementation of these functions it is
+// highly recommend to avoid std:: usage otherwise many interleavings in
+// standard library will not be inserted.
 #define as_atomic attr(ltest_atomic)
 
 namespace ltest {
@@ -103,7 +107,8 @@ struct TargetMethod<void, Target, Args...> {
 
 }  // namespace ltest
 
-#define declare_task_name(symbol) const char *symbol##_task_name = #symbol
+#define declare_task_name(symbol) \
+  static const char *symbol##_task_name = #symbol
 
 #define target_method(gen, ret, cls, symbol, ...)          \
   declare_task_name(symbol);                               \

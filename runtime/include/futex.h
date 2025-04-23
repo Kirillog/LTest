@@ -9,6 +9,8 @@
 struct CoroBase;
 
 struct FutexQueues {
+  // TODO(kmitkin): due to usage in as_atomic functions rewrite to custom hash
+  // table & linked list
   std::unordered_map<std::uintptr_t, std::deque<CoroBase *>> queues;
 
   void Push(FutexState state, CoroBase *coro) {

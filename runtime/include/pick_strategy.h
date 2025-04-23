@@ -8,20 +8,24 @@
 
 template <typename TargetObj, StrategyVerifier Verifier>
 struct PickStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
-  virtual size_t Pick() = 0;
+  virtual std::optional<size_t> Pick() = 0;
 
-  virtual size_t PickSchedule() = 0;
+  virtual std::optional<size_t> PickSchedule() = 0;
 
   explicit PickStrategy(size_t threads_count,
                         std::vector<TaskBuilder> constructors)
       : BaseStrategyWithThreads<TargetObj, Verifier>(threads_count,
                                                      constructors) {}
 
-  size_t NextThreadId() override { return Pick(); }
+  std::optional<size_t> NextThreadId() override { return Pick(); }
 
-  TaskWithMetaData NextSchedule() override {
+  std::optional<TaskWithMetaData> NextSchedule() override {
     auto& round_schedule = this->round_schedule;
-    size_t current_thread = PickSchedule();
+    auto current_thread_opt = PickSchedule();
+    if (!current_thread_opt.has_value()) {
+      return std::nullopt;
+    }
+    size_t current_thread = current_thread_opt.value();
     int next_task_index = this->GetNextTaskInThread(current_thread);
     bool is_new = round_schedule[current_thread] != next_task_index;
 

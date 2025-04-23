@@ -17,7 +17,7 @@ struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
                                           std::move(constructors)},
         weights{std::move(weights)} {}
 
-  size_t Pick() override {
+  std::optional<size_t> Pick() override {
     pick_weights.clear();
     auto &threads = PickStrategy<TargetObj, Verifier>::threads;
     for (size_t i = 0; i < threads.size(); ++i) {
@@ -27,7 +27,9 @@ struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
       pick_weights.push_back(weights[i]);
     }
 
-    assert(!pick_weights.empty() && "deadlock");
+    if (pick_weights.empty()) [[unlikely]] {
+      return std::nullopt;
+    }
 
     auto thread_distribution =
         std::discrete_distribution<>(pick_weights.begin(), pick_weights.end());
@@ -41,10 +43,10 @@ struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
       }
       num--;
     }
-    assert(false && "Cannot pick thread to continue round generation");
+    return std::nullopt;
   }
 
-  size_t PickSchedule() override {
+  std::optional<size_t> PickSchedule() override {
     pick_weights.clear();
     auto &threads = this->threads;
 
@@ -57,7 +59,9 @@ struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
       pick_weights.push_back(weights[i]);
     }
 
-    assert(!pick_weights.empty() && "deadlock");
+    if (pick_weights.empty()) [[unlikely]] {
+      return std::nullopt;
+    }
 
     auto thread_distribution =
         std::discrete_distribution<>(pick_weights.begin(), pick_weights.end());
@@ -73,7 +77,7 @@ struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
       }
       num--;
     }
-    assert(false && "Cannot pick thread to continue round scheduling");
+    return std::nullopt;
   }
 
  private:

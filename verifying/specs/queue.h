@@ -2,6 +2,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <string>
 
 #include "../../runtime/include/verifying.h"
 

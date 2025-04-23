@@ -106,9 +106,6 @@ struct YieldInserter {
       return;
     }
 
-    errs() << "yields inserted to the " << F.getName() << "\n";
-    errs() << F << "\n";
-
     visited.insert(name);
 
     Builder Builder(&*F.begin());
@@ -140,6 +137,9 @@ struct YieldInserter {
       }
     }
 #endif
+
+    errs() << "yields inserted to the " << F.getName() << "\n";
+    errs() << F << "\n";
   }
 
   bool ItsYieldInst(Instruction *inst) {

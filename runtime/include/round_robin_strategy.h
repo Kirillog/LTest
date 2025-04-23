@@ -12,7 +12,7 @@ struct RoundRobinStrategy : PickStrategy<TargetObj, Verifier> {
         PickStrategy<TargetObj, Verifier>{threads_count,
                                           std::move(constructors)} {}
 
-  size_t Pick() override {
+  std::optional<size_t> Pick() override {
     auto &threads = PickStrategy<TargetObj, Verifier>::threads;
     for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
       auto cur = (next_task++) % threads.size();
@@ -21,10 +21,10 @@ struct RoundRobinStrategy : PickStrategy<TargetObj, Verifier> {
       }
       return cur;
     }
-    assert(false && "deadlock");
+    return std::nullopt;
   }
 
-  size_t PickSchedule() override {
+  std::optional<size_t> PickSchedule() override {
     auto &threads = this->threads;
     for (size_t attempt = 0; attempt < threads.size(); ++attempt) {
       auto cur = (next_task++) % threads.size();
@@ -36,7 +36,7 @@ struct RoundRobinStrategy : PickStrategy<TargetObj, Verifier> {
       }
       return cur;
     }
-    assert(false && "deadlock");
+    return std::nullopt;
   }
 
   size_t next_task;

@@ -6,6 +6,8 @@
 #include <cstring>
 
 #include "../specs/queue.h"
+#include "runtime/include/verifying.h"
+#include "runtime/include/verifying_macro.h"
 
 const int N = 100;
 
