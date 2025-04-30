@@ -9,13 +9,13 @@
 #include <utility>
 #include <vector>
 
-#include "futex.h"
+#include "block_manager.h"
 
 #define panic() assert(false)
 
 struct CoroBase;
 
-struct FutexQueues;
+struct BlockManager;
 
 // Current executing coroutine.
 extern std::shared_ptr<CoroBase> this_coro;
@@ -23,7 +23,7 @@ extern std::shared_ptr<CoroBase> this_coro;
 // Scheduler context
 extern boost::context::fiber_context sched_ctx;
 
-extern FutexQueues futex_queues;
+extern BlockManager block_manager;
 
 extern "C" void CoroYield();
 
@@ -67,14 +67,14 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Terminate the coroutine.
   void Terminate();
 
-  void SetBlocked(const FutexState& state) {
+  void SetBlocked(const BlockState& state) {
     fstate = state;
-    futex_queues.Push(state, this);
+    block_manager.BlockOn(state, this);
   }
 
-  FutexState GetFutexState() { return fstate; }
+  BlockState GetBlockState() { return fstate; }
 
-  bool IsBlocked() { return futex_queues.IsBlocked(fstate, this); }
+  bool IsBlocked() { return block_manager.IsBlocked(fstate, this); }
 
   // Checks if the coroutine is parked.
   bool IsParked() const;
@@ -99,7 +99,7 @@ struct CoroBase : public std::enable_shared_from_this<CoroBase> {
   // Is coroutine returned.
   bool is_returned{};
   // Futex state on which coroutine is blocked.
-  FutexState fstate{};
+  BlockState fstate{};
   // Name.
   std::string_view name;
   boost::context::fiber_context ctx;

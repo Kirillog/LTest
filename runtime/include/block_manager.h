@@ -4,29 +4,29 @@
 #include <deque>
 #include <unordered_map>
 
-#include "futex_state.h"
+#include "block_state.h"
 
 struct CoroBase;
 
-struct FutexQueues {
+struct BlockManager {
   // TODO(kmitkin): due to usage in as_atomic functions rewrite to custom hash
   // table & linked list
   std::unordered_map<std::uintptr_t, std::deque<CoroBase *>> queues;
 
-  void Push(FutexState state, CoroBase *coro) {
+  void BlockOn(BlockState state, CoroBase *coro) {
     if (!queues.contains(state.addr)) {
       queues[state.addr] = std::deque<CoroBase *>{};
     }
     queues[state.addr].push_back(coro);
   }
 
-  bool IsBlocked(const FutexState &state, CoroBase *coro) {
+  bool IsBlocked(const BlockState &state, CoroBase *coro) {
     return state.addr &&
            std::find(queues[state.addr].begin(), queues[state.addr].end(),
                      coro) != queues[state.addr].end();
   }
 
-  std::size_t Pop(std::intptr_t addr, std::size_t max_wakes) {
+  std::size_t UnblockOn(std::intptr_t addr, std::size_t max_wakes) {
     if (!queues.contains(addr)) [[unlikely]] {
       return 0;
     }
@@ -38,7 +38,7 @@ struct FutexQueues {
     return wakes;
   }
 
-  void PopAll(std::intptr_t addr) {
+  void UnblockAllOn(std::intptr_t addr) {
     if (!queues.contains(addr)) {
       return;
     }
@@ -46,4 +46,4 @@ struct FutexQueues {
   }
 };
 
-extern FutexQueues futex_queues;
+extern BlockManager block_manager;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-struct FutexState {
+struct BlockState {
   std::intptr_t addr;
   long value;
 

@@ -12,7 +12,7 @@ Task this_coro{};
 
 boost::context::fiber_context sched_ctx;
 
-FutexQueues futex_queues;
+BlockManager block_manager;
 
 namespace ltest {
 std::vector<TaskBuilder> task_builders{};

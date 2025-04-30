@@ -37,8 +37,8 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       // debug(stderr, "prior: %d, number %d\n", priorities[i], i);
       if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
         // debug(stderr, "blocked on %p val %d\n",
-        // threads[i].back()->GetFutexState().addr,
-        // threads[i].back()->GetFutexState().value);
+        // threads[i].back()->GetBlockState().addr,
+        // threads[i].back()->GetBlockState().value);
         // dual waiting if request finished, but follow up isn't
         // skip dual tasks that already have finished the request
         // section(follow-up will be executed in another task, so we can't

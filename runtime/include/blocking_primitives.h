@@ -1,7 +1,7 @@
 #pragma once
 #include <mutex>
 
-#include "futex.h"
+#include "block_manager.h"
 #include "lib.h"
 #include "verifying_macro.h"
 
@@ -27,13 +27,13 @@ struct mutex {
 
   as_atomic void unlock() {
     locked = 0;
-    futex_queues.PopAll(
+    block_manager.UnblockAllOn(
         state.addr);  // To have the ability schedule any coroutine
   }
 
  private:
   int locked{0};
-  FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};
+  BlockState state{reinterpret_cast<std::intptr_t>(&locked), locked};
 
   friend struct condition_variable;
 };
@@ -48,7 +48,7 @@ struct shared_mutex {
   }
   as_atomic void unlock() {
     locked = 0;
-    futex_queues.PopAll(state.addr);
+    block_manager.UnblockAllOn(state.addr);
   }
   as_atomic void lock_shared() {
     while (locked == -1) {
@@ -59,12 +59,12 @@ struct shared_mutex {
   }
   as_atomic void unlock_shared() {
     --locked;
-    futex_queues.PopAll(state.addr);
+    block_manager.UnblockAllOn(state.addr);
   }
 
  private:
   int locked{0};
-  FutexState state{reinterpret_cast<std::intptr_t>(&locked), locked};
+  BlockState state{reinterpret_cast<std::intptr_t>(&locked), locked};
 };
 
 struct condition_variable {
@@ -76,9 +76,9 @@ struct condition_variable {
     lock.lock();
   }
 
-  as_atomic void notify_one() { futex_queues.Pop(addr, 1); }
+  as_atomic void notify_one() { block_manager.UnblockOn(addr, 1); }
 
-  as_atomic void notify_all() { futex_queues.PopAll(addr); }
+  as_atomic void notify_all() { block_manager.UnblockAllOn(addr); }
 
  private:
   std::intptr_t addr;

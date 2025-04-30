@@ -5,7 +5,7 @@
 
 #include <cerrno>
 
-#include "runtime/include/futex.h"
+#include "runtime/include/block_manager.h"
 #include "runtime/include/lib.h"
 #include "runtime/include/logger.h"
 #include "runtime/include/syscall_trap.h"
@@ -25,7 +25,7 @@ static int hook(long syscall_number, long arg0, long arg1, long arg2, long arg3,
           (unsigned long)arg0, arg1, arg2, *((int *)arg0));
     arg1 = arg1 & FUTEX_CMD_MASK;
     if (arg1 == FUTEX_WAIT || arg1 == FUTEX_WAIT_BITSET) {
-      auto fstate = FutexState{arg0, arg2};
+      auto fstate = BlockState{arg0, arg2};
       if (fstate.CanBeBlocked()) {
         this_coro->SetBlocked(fstate);
         CoroYield();
@@ -36,7 +36,7 @@ static int hook(long syscall_number, long arg0, long arg1, long arg2, long arg3,
       }
     } else if (arg1 == FUTEX_WAKE || arg1 == FUTEX_WAKE_BITSET) {
       debug(stderr, "caught wake\n");
-      *result = futex_queues.Pop(arg0, arg2);
+      *result = block_manager.UnblockOn(arg0, arg2);
     } else {
       assert(false && "unsupported futex call");
     }
