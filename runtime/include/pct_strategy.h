@@ -11,7 +11,7 @@
 // K represents the maximal number of potential switches in the program
 // Although it's impossible to predict the exact number of switches(since it's
 // equivalent to the halt problem), k should be good approximation
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   PctStrategy(size_t threads_count, std::vector<TaskBuilder> ctrs)
       : BaseStrategyWithThreads<TargetObj, Verifier>(threads_count, ctrs),

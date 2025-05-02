@@ -50,7 +50,7 @@ Opts parse_opts();
 
 std::vector<std::string> split(const std::string &s, char delim);
 
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 std::unique_ptr<Strategy> MakeStrategy(Opts &opts, std::vector<TaskBuilder> l) {
   switch (opts.typ) {
     case RR: {
@@ -83,7 +83,7 @@ std::unique_ptr<Strategy> MakeStrategy(Opts &opts, std::vector<TaskBuilder> l) {
 
 // Keeps pointer to strategy to pass reference to base scheduler.
 // TODO: refactor.
-template <StrategyVerifier Verifier>
+template <StrategyTaskVerifier Verifier>
 struct StrategySchedulerWrapper : StrategyScheduler<Verifier> {
   StrategySchedulerWrapper(std::unique_ptr<Strategy> strategy,
                            ModelChecker &checker, PrettyPrinter &pretty_printer,
@@ -98,7 +98,7 @@ struct StrategySchedulerWrapper : StrategyScheduler<Verifier> {
   std::unique_ptr<Strategy> strategy;
 };
 
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 std::unique_ptr<Scheduler> MakeScheduler(ModelChecker &checker, Opts &opts,
                                          std::vector<TaskBuilder> l,
                                          PrettyPrinter &pretty_printer) {
@@ -149,7 +149,8 @@ inline int TrapRun(std::unique_ptr<Scheduler> &&scheduler,
   }
 }
 
-template <class Spec, StrategyVerifier Verifier = DefaultStrategyVerifier>
+template <class Spec,
+          StrategyTaskVerifier Verifier = DefaultStrategyTaskVerifier>
 int Run(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   Opts opts = parse_opts();

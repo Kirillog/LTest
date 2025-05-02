@@ -8,7 +8,7 @@
 
 // Allows a random thread to work.
 // Randoms new task.
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 struct RandomStrategy : PickStrategy<TargetObj, Verifier> {
   explicit RandomStrategy(size_t threads_count,
                           std::vector<TaskBuilder> constructors,

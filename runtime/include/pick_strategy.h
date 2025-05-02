@@ -6,7 +6,7 @@
 
 #include "scheduler.h"
 
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 struct PickStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
   virtual std::optional<size_t> Pick() = 0;
 

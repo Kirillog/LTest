@@ -4,7 +4,7 @@
 
 #include "pick_strategy.h"
 
-template <typename TargetObj, StrategyVerifier Verifier>
+template <typename TargetObj, StrategyTaskVerifier Verifier>
 struct RoundRobinStrategy : PickStrategy<TargetObj, Verifier> {
   explicit RoundRobinStrategy(size_t threads_count,
                               std::vector<TaskBuilder> constructors)

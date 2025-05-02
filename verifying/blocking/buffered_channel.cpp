@@ -5,8 +5,8 @@
 
 #include "../specs/queue.h"
 #include "runtime/include/verifying.h"
+#include "verifiers/buffered_channel_verifier.h"
 
-constexpr int THREAD_COUNT = 2;
 constexpr int N = 5;
 
 namespace spec {
@@ -62,57 +62,6 @@ struct BufferedChannelEquals {
   }
 };
 };  // namespace spec
-
-struct BufferedChannelVerifier {
-  bool Verify(CreatedTaskMetaData ctask) {
-    auto [taskName, is_new, thread_id] = ctask;
-    debug(stderr, "validating method %s, thread_id: %zu\n", taskName.data(),
-          thread_id);
-    if (!is_new) {
-      return true;
-    }
-    if (taskName == "Send") {
-      if (senders_ == 0) {
-        ++senders_;
-        ++size_;
-        return true;
-      }
-      return false;
-    } else if (taskName == "TryRecv") {
-      if (size_ > 0) {
-        --size_;
-      }
-      return true;
-    } else {
-      assert(false);
-    }
-  }
-
-  void OnFinished(TaskWithMetaData ctask) {
-    auto [task, is_new, thread_id] = ctask;
-    auto taskName = task->GetName();
-    debug(stderr, "On finished method %s, thread_id: %zu, size: %zu\n",
-          taskName.data(), thread_id, size_);
-    if (taskName == "Send") {
-      --senders_;
-      return;
-    } else if (taskName == "TryRecv") {
-      return;
-    } else {
-      assert(false);
-    }
-  }
-
-  std::optional<std::string> ReleaseTask(size_t thread_id) {
-    if (size_ > 0) {
-      return {"TryRecv"};
-    }
-    return std::nullopt;
-  }
-
-  size_t senders_;
-  size_t size_;
-};
 
 struct BufferedChannel {
   non_atomic int Send(int v) {
@@ -170,7 +119,7 @@ using spec_t =
     ltest::Spec<BufferedChannel, spec::BufferedChannel,
                 spec::BufferedChannelHash, spec::BufferedChannelEquals>;
 
-LTEST_ENTRYPOINT_CONSTRAINT(spec_t, BufferedChannelVerifier);
+LTEST_ENTRYPOINT_CONSTRAINT(spec_t, spec::BufferedChannelVerifier);
 
 target_method(generateInt, void, BufferedChannel, Send, int);
 target_method(ltest::generators::genEmpty, int, BufferedChannel, TryRecv);
