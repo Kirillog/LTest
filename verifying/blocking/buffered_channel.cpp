@@ -16,7 +16,7 @@ struct BufferedChannel {
     return 0;
   }
 
-  int TryRecv() {
+  int Recv() {
     if (deq.empty()) {
       return -1;
     }
@@ -32,13 +32,13 @@ struct BufferedChannel {
       return l->Send(std::get<0>(*real_args));
     };
 
-    method_t try_recv_func = [](BufferedChannel *l, void *args) -> int {
-      return l->TryRecv();
+    method_t recv_func = [](BufferedChannel *l, void *args) -> int {
+      return l->Recv();
     };
 
     return std::map<std::string, method_t>{
         {"Send", send_func},
-        {"TryRecv", try_recv_func},
+        {"Recv", recv_func},
     };
   }
 
@@ -67,7 +67,7 @@ struct BufferedChannel {
   non_atomic int Send(int v) {
     std::unique_lock lock{mutex_};
     while (!closed_ && full_) {
-      debug(stderr, "Waiting...\n");
+      debug(stderr, "Waiting in send...\n");
       send_side_cv_.wait(lock);
     }
     debug(stderr, "Send\n");
@@ -76,15 +76,17 @@ struct BufferedChannel {
     sidx_ = (sidx_ + 1) % N;
     full_ = (sidx_ == ridx_);
     empty_ = false;
+    recv_side_cv_.notify_one();
     return 0;
   }
 
-  // TryRecv is not blocking otherwise it is dual structure
-  non_atomic int TryRecv() {
-    std::lock_guard lock{mutex_};
-    if (closed_ || empty_) {
-      return -1;
+  non_atomic int Recv() {
+    std::unique_lock lock{mutex_};
+    while (!closed_ && empty_) {
+      debug(stderr, "Waiting in recv...\n");
+      recv_side_cv_.wait(lock);
     }
+    debug(stderr, "Recv\n");
     auto val = queue_[ridx_];
     ridx_ = (ridx_ + 1) % 5;
     empty_ = (sidx_ == ridx_);
@@ -93,15 +95,16 @@ struct BufferedChannel {
     return val;
   }
 
-  non_atomic int Close() {
+  int Close() {
     closed_.store(true);
     send_side_cv_.notify_all();
+    recv_side_cv_.notify_all();
     return 0;
   }
 
   std::mutex mutex_;
-  std::condition_variable send_side_cv_;
-  std::atomic_bool closed_{false};
+  std::condition_variable send_side_cv_, recv_side_cv_;
+  std::atomic<bool> closed_{false};
 
   bool full_{false};
   bool empty_{true};
@@ -122,5 +125,4 @@ using spec_t =
 LTEST_ENTRYPOINT_CONSTRAINT(spec_t, spec::BufferedChannelVerifier);
 
 target_method(generateInt, void, BufferedChannel, Send, int);
-target_method(ltest::generators::genEmpty, int, BufferedChannel, TryRecv);
-// target_method(ltest::generators::genEmpty, int, BufferedChannel, Close);
+target_method(ltest::generators::genEmpty, int, BufferedChannel, Recv);

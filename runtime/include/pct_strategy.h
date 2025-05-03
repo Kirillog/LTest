@@ -17,14 +17,7 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       : BaseStrategyWithThreads<TargetObj, Verifier>(threads_count, ctrs),
         current_depth(1),
         current_schedule_length(0) {
-    // We have information about potential number of resumes
-    // but because of the implementation, it's only available in the task.
-    // In fact, it doesn't depend on the task, it only depends on the
-    // constructor
-    size_t avg_k = 0;
-    avg_k = avg_k / this->constructors.size();
-
-    PrepareForDepth(current_depth, avg_k);
+    PrepareForDepth(current_depth, 1);
   }
 
   std::optional<size_t> NextThreadId() override {
@@ -36,9 +29,9 @@ struct PctStrategy : public BaseStrategyWithThreads<TargetObj, Verifier> {
       // Ignore waiting tasks
       // debug(stderr, "prior: %d, number %d\n", priorities[i], i);
       if (!threads[i].empty() && threads[i].back()->IsBlocked()) {
-        // debug(stderr, "blocked on %p val %d\n",
-        // threads[i].back()->GetBlockState().addr,
-        // threads[i].back()->GetBlockState().value);
+        debug(stderr, "blocked on %p val %d\n",
+              threads[i].back()->GetBlockState().addr,
+              threads[i].back()->GetBlockState().value);
         // dual waiting if request finished, but follow up isn't
         // skip dual tasks that already have finished the request
         // section(follow-up will be executed in another task, so we can't

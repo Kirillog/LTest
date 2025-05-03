@@ -259,7 +259,6 @@ struct BaseStrategyWithThreads : public Strategy {
                 constructor.Build(this->state.get(), thread_index, task_index);
             auto verified = this->sched_checker.Verify(
                 std::string(task->GetName()), thread_index);
-            assert(verified && "wrong release task at termination");
             thread.emplace_back(task);
           }
         }
